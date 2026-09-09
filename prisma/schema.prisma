@@ -48,10 +48,11 @@ model Team {
 }
 
 model TeamMember {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   teamId   String
   userId   String
   jerseyNo Int?
+  position String?
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -76,6 +77,7 @@ model TrainingRegistration {
   trainingId String
   userId     String
   status     RsvpStatus @default(GOING)
+  attended   Boolean?
   createdAt  DateTime   @default(now())
 
   training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
@@ -88,6 +90,7 @@ model Match {
   id        String   @id @default(cuid())
   teamId    String
   opponent  String
+  isHome    Boolean  @default(true)
   startsAt  DateTime
   location  String
   homeScore Int?
