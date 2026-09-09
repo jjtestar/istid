@@ -1,9 +1,9 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge, Card, DarkCard, Eyebrow } from "@/components/ui";
-import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { endTime, formatDateHeader, formatMonthYear, formatTime } from "@/lib/format";
-import { getCalendarEvents, getUserTeam } from "@/lib/queries";
+import { getCalendarEvents } from "@/lib/queries";
 
 function dayKey(date: Date) {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -20,8 +20,7 @@ function startOfWeek(date: Date) {
 const WEEKDAY_LABELS = ["MÅN", "TIS", "ONS", "TOR", "FRE", "LÖR", "SÖN"];
 
 export default async function KalenderPage() {
-  const user = await getCurrentUser();
-  const team = await getUserTeam(user.id);
+  const { user, team } = await getCurrentUserWithTeam();
 
   if (!team) {
     return (

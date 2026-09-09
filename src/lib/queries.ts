@@ -1,13 +1,5 @@
 import { prisma } from "@/lib/prisma";
 
-export async function getUserTeam(userId: string) {
-  const membership = await prisma.teamMember.findFirst({
-    where: { userId },
-    include: { team: true },
-  });
-  return membership?.team ?? null;
-}
-
 export async function getDashboardData(userId: string, teamId: string) {
   const now = new Date();
 
@@ -81,12 +73,6 @@ export async function getStats(userId: string) {
         ? 0
         : Math.round((attendedCount / trainingRegistrations.length) * 100),
   };
-}
-
-export async function getTeamMember(teamId: string, userId: string) {
-  return prisma.teamMember.findUnique({
-    where: { teamId_userId: { teamId, userId } },
-  });
 }
 
 export async function getTeamRoster(teamId: string) {

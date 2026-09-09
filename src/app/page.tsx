@@ -2,13 +2,12 @@ import { respondToMatch, respondToTraining } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge, Card, DarkCard, Eyebrow, PrimaryButton } from "@/components/ui";
 import { BellIcon, UsersIcon } from "@/components/icons";
-import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
-import { getDashboardData, getUserTeam } from "@/lib/queries";
+import { getDashboardData } from "@/lib/queries";
 
 export default async function Home() {
-  const user = await getCurrentUser();
-  const team = await getUserTeam(user.id);
+  const { user, team } = await getCurrentUserWithTeam();
 
   if (!team) {
     return (

@@ -1,8 +1,8 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow, StatTile } from "@/components/ui";
-import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader } from "@/lib/format";
-import { getStats, getTeamMember, getUserTeam } from "@/lib/queries";
+import { getStats } from "@/lib/queries";
 
 function initials(name: string) {
   return name
@@ -14,8 +14,7 @@ function initials(name: string) {
 }
 
 export default async function StatistikPage() {
-  const user = await getCurrentUser();
-  const team = await getUserTeam(user.id);
+  const { user, team, membership: member } = await getCurrentUserWithTeam();
 
   if (!team) {
     return (
@@ -25,10 +24,7 @@ export default async function StatistikPage() {
     );
   }
 
-  const [member, stats] = await Promise.all([
-    getTeamMember(team.id, user.id),
-    getStats(user.id),
-  ]);
+  const stats = await getStats(user.id);
 
   return (
     <div>

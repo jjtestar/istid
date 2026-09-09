@@ -1,11 +1,10 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow } from "@/components/ui";
-import { getCurrentUser } from "@/lib/current-user";
-import { getTeamRoster, getUserTeam } from "@/lib/queries";
+import { getCurrentUserWithTeam } from "@/lib/current-user";
+import { getTeamRoster } from "@/lib/queries";
 
 export default async function LagPage() {
-  const user = await getCurrentUser();
-  const team = await getUserTeam(user.id);
+  const { team } = await getCurrentUserWithTeam();
 
   if (!team) {
     return (
