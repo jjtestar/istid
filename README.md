@@ -39,12 +39,17 @@ projekt (schema, herrgris) — egen databas, eget deploy.
 
 ## Koppla till Vercel Postgres (Neon)
 
-1. Skapa ett Vercel-projekt kopplat till detta repo (görs separat, se nedan).
+1. Vercel-projektet är kopplat till detta repo.
 2. I projektet på vercel.com: **Storage → Create Database → Postgres**
-   (drivs av Neon). Detta lägger automatiskt till `DATABASE_URL` m.fl.
-   env-variabler på projektet.
-3. Dra ner env-variablerna lokalt: `vercel env pull .env`
-4. Kör migrationer mot databasen: `npm run db:deploy`
+   (drivs av Neon). Detta lägger automatiskt till `DATABASE_URL`,
+   `DATABASE_URL_UNPOOLED` m.fl. env-variabler på projektet.
+3. Klart. `npm run build` kör `prisma migrate deploy` automatiskt innan
+   appen byggs, så varje deploy på Vercel skapar/uppdaterar tabellerna i
+   Neon-databasen — inget manuellt migrationssteg behövs i produktion.
+
+För lokal utveckling: dra ner env-variablerna med `vercel env pull .env`
+(kräver att du är inloggad med `vercel login`), och kör sedan
+`npm run db:migrate` för att skapa/uppdatera din egen migration.
 
 ## Databas­schema
 
