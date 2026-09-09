@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PLAYER
+  COACH
+  ADMIN
+}
+
+enum RsvpStatus {
+  GOING
+  NOT_GOING
+  MAYBE
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  passwordHash  String?
+  role          Role      @default(PLAYER)
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  teams               TeamMember[]
+  trainingRegistrations TrainingRegistration[]
+  matchRegistrations     MatchRegistration[]
+  matchStats             MatchStat[]
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  season    String
+  createdAt DateTime @default(now())
+
+  members   TeamMember[]
+  trainings Training[]
+  matches   Match[]
+}
+
+model TeamMember {
+  id       String @id @default(cuid())
+  teamId   String
+  userId   String
+  jerseyNo Int?
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
+model Training {
+  id        String   @id @default(cuid())
+  teamId    String
+  startsAt  DateTime
+  location  String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  team          Team                    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  registrations TrainingRegistration[]
+}
+
+model TrainingRegistration {
+  id         String     @id @default(cuid())
+  trainingId String
+  userId     String
+  status     RsvpStatus @default(GOING)
+  createdAt  DateTime   @default(now())
+
+  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingId, userId])
+}
+
+model Match {
+  id        String   @id @default(cuid())
+  teamId    String
+  opponent  String
+  startsAt  DateTime
+  location  String
+  homeScore Int?
+  awayScore Int?
+  createdAt DateTime @default(now())
+
+  team          Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  registrations MatchRegistration[]
+  stats         MatchStat[]
+}
+
+model MatchRegistration {
+  id       String     @id @default(cuid())
+  matchId  String
+  userId   String
+  status   RsvpStatus @default(GOING)
+  createdAt DateTime  @default(now())
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, userId])
+}
+
+model MatchStat {
+  id      String @id @default(cuid())
+  matchId String
+  userId  String
+  goals   Int    @default(0)
+  assists Int    @default(0)
+  penaltyMinutes Int @default(0)
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, userId])
+}
