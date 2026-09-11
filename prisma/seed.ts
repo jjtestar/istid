@@ -8,7 +8,7 @@ const CURRENT_SEASON = "2026/27";
 const teams = [
   {
     slug: "kumla",
-    name: "Kumla",
+    name: "Kumla hockeylag",
     rink: "Kumla ishall",
     players: [
       ["user-johan", "Johan Berg", "johan@example.com", 22, "Forward"],
@@ -20,7 +20,7 @@ const teams = [
   },
   {
     slug: "hallsberg",
-    name: "Hallsberg",
+    name: "Hallsberg hockeylag",
     rink: "Sydnärkehallen",
     players: [
       ["player-hallsberg-1", "Oskar Lind", "oskar.lind@example.com", 7, "Forward"],
@@ -32,7 +32,7 @@ const teams = [
   },
   {
     slug: "fellingsbro",
-    name: "Fellingsbro",
+    name: "Fellingsbro hockeylag",
     rink: "Fellingsbro isarena",
     players: [
       ["player-fellingsbro-1", "Hugo Andersson", "hugo.andersson@example.com", 8, "Forward"],
@@ -209,7 +209,7 @@ async function main() {
     }
   }
 
-  console.log("Seeded Kumla, Hallsberg and Fellingsbro across three seasons with 15 players.");
+  console.log("Seeded three hockey teams across three seasons with 15 players.");
 }
 
 main()

@@ -30,8 +30,14 @@ export function ContextSwitcher({
   return (
     <form
       action={submitContext}
-      className="grid grid-cols-2 gap-2 rounded-2xl border border-divider bg-white/[0.92] p-2 shadow-[0_8px_24px_rgb(13_59_102_/_0.07)] backdrop-blur-[2px]"
+      className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)] gap-2 rounded-2xl border border-divider bg-white/[0.92] p-2 shadow-[0_8px_24px_rgb(13_59_102_/_0.07)] backdrop-blur-[2px]"
     >
+      <div className="col-span-2 flex items-center gap-2 px-1 pt-1">
+        <span className="h-4 w-1 rounded-full bg-signal" aria-hidden="true" />
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-ink-subtle">
+          Välj: Lag och Säsong
+        </p>
+      </div>
       <label className="min-w-0">
         <span className="sr-only">Lag</span>
         <select

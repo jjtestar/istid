@@ -7,7 +7,11 @@ export const DEFAULT_TEAM_SLUG = "kumla";
 export const DEFAULT_SEASON = "2026/27";
 
 export function teamSlug(name: string) {
-  return name.toLocaleLowerCase("sv-SE").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return name
+    .toLocaleLowerCase("sv-SE")
+    .replace(/\s+hockeylag$/, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 export async function getCurrentUser() {
