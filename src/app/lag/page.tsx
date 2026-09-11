@@ -1,10 +1,11 @@
 import { PageHeader } from "@/components/PageHeader";
+import { ContextSwitcher } from "@/components/ContextSwitcher";
 import { Card, Eyebrow, StatusLabel } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { getRosterWithNextMatch } from "@/lib/queries";
 
 export default async function LagPage() {
-  const { team } = await getCurrentUserWithTeam();
+  const { team, context } = await getCurrentUserWithTeam();
 
   if (!team) {
     return (
@@ -23,6 +24,13 @@ export default async function LagPage() {
       <PageHeader title="Lag" />
 
       <main className="space-y-4 px-5 pb-8">
+        <ContextSwitcher
+          teams={context.teams}
+          seasons={context.seasons}
+          selectedTeamSlug={context.selectedTeamSlug}
+          selectedSeason={context.selectedSeason}
+        />
+
         <Card className="p-4">
           <div className="flex items-center justify-between gap-3">
             <div>

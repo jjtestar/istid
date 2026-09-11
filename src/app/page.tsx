@@ -1,12 +1,13 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
+import { ContextSwitcher } from "@/components/ContextSwitcher";
 import { Card, Eyebrow, ResponseToggle, StatusLabel } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
 import { getCalendarEvents, getDashboardData } from "@/lib/queries";
 
 export default async function Home() {
-  const { user, team } = await getCurrentUserWithTeam();
+  const { user, team, context } = await getCurrentUserWithTeam();
 
   if (!team) {
     return (
@@ -46,6 +47,13 @@ export default async function Home() {
             {team.name} · {team.season}
           </p>
         </header>
+
+        <ContextSwitcher
+          teams={context.teams}
+          seasons={context.seasons}
+          selectedTeamSlug={context.selectedTeamSlug}
+          selectedSeason={context.selectedSeason}
+        />
 
         {featuredEvents.map(({ kind, item }) => {
           const isTraining = kind === "training";

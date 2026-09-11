@@ -1,5 +1,6 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
+import { ContextSwitcher } from "@/components/ContextSwitcher";
 import { Card, Eyebrow, StatusLabel } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { endTime, formatDateHeader, formatMonthYear, formatTime } from "@/lib/format";
@@ -20,7 +21,7 @@ function startOfWeek(date: Date) {
 const WEEKDAY_LABELS = ["MÅN", "TIS", "ONS", "TOR", "FRE", "LÖR", "SÖN"];
 
 export default async function KalenderPage() {
-  const { user, team } = await getCurrentUserWithTeam();
+  const { user, team, context } = await getCurrentUserWithTeam();
 
   if (!team) {
     return (
@@ -30,7 +31,8 @@ export default async function KalenderPage() {
     );
   }
 
-  const events = await getCalendarEvents(user.id, team.id);
+  const isHistoric = team.season !== "2026/27";
+  const events = await getCalendarEvents(user.id, team.id, 21, isHistoric);
   const today = new Date();
   const weekStart = startOfWeek(today);
   const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -51,34 +53,43 @@ export default async function KalenderPage() {
       <PageHeader title="Kalender" />
 
       <main className="space-y-5 px-5 pb-8">
+        <ContextSwitcher
+          teams={context.teams}
+          seasons={context.seasons}
+          selectedTeamSlug={context.selectedTeamSlug}
+          selectedSeason={context.selectedSeason}
+        />
+
         <Card className="p-4">
-          <div className="text-center text-base font-bold text-ink">
-            {formatMonthYear(today)}
-          </div>
-          <div className="mt-4 grid grid-cols-7 gap-1 text-center">
-            {weekDates.map((date, index) => {
-              const isToday = dayKey(date) === dayKey(today);
-              return (
-                <div key={dayKey(date)} className="flex flex-col items-center gap-1.5">
-                  <span className="text-[10px] font-semibold text-ink-subtle">
-                    {WEEKDAY_LABELS[index]}
-                  </span>
-                  <span
-                    className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
-                      isToday ? "bg-ink text-white" : "text-ink"
-                    }`}
-                  >
-                    {date.getDate()}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {isHistoric ? (
+            <div className="text-center">
+              <Eyebrow>Avslutad säsong</Eyebrow>
+              <div className="mt-1 text-lg font-bold text-ink">{team.season}</div>
+              <div className="mt-1 text-sm text-ink-subtle">Senaste händelserna visas först</div>
+            </div>
+          ) : (
+            <>
+              <div className="text-center text-base font-bold text-ink">{formatMonthYear(today)}</div>
+              <div className="mt-4 grid grid-cols-7 gap-1 text-center">
+                {weekDates.map((date, index) => {
+                  const isToday = dayKey(date) === dayKey(today);
+                  return (
+                    <div key={dayKey(date)} className="flex flex-col items-center gap-1.5">
+                      <span className="text-[10px] font-semibold text-ink-subtle">{WEEKDAY_LABELS[index]}</span>
+                      <span className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${isToday ? "bg-ink text-white" : "text-ink"}`}>
+                        {date.getDate()}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </Card>
 
         {groups.size === 0 && (
           <Card className="p-5 text-center text-sm text-ink-subtle">
-            Inga kommande händelser just nu.
+            {isHistoric ? "Inga händelser hittades för säsongen." : "Inga kommande händelser just nu."}
           </Card>
         )}
 

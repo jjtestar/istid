@@ -1,8 +1,27 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentUser, teamSlug } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+
+export async function changeAppContext(formData: FormData) {
+  await getCurrentUser();
+  const requestedTeam = String(formData.get("teamSlug") ?? "");
+  const requestedSeason = String(formData.get("season") ?? "");
+  const availableTeams = await prisma.team.findMany({ select: { name: true, season: true } });
+  const selectionExists = availableTeams.some(
+    (team) => teamSlug(team.name) === requestedTeam && team.season === requestedSeason,
+  );
+
+  if (!selectionExists) return;
+
+  const cookieStore = await cookies();
+  const options = { httpOnly: true, sameSite: "lax" as const, path: "/", maxAge: 60 * 60 * 24 * 365 };
+  cookieStore.set("istid-team", requestedTeam, options);
+  cookieStore.set("istid-season", requestedSeason, options);
+  revalidatePath("/", "layout");
+}
 
 export async function respondToTraining(formData: FormData) {
   const trainingId = formData.get("trainingId") as string;
