@@ -8,6 +8,7 @@ type LineupPlayer = {
   id: string;
   name: string;
   jerseyNo: number | null;
+  position: string | null;
   status: RsvpStatus;
   absenceReason: string | null;
 };
@@ -29,16 +30,24 @@ function PlayerList({ players, emptyText }: { players: LineupPlayer[]; emptyText
   return (
     <ul className="divide-y divide-divider">
       {players.map((player) => (
-        <li key={player.id} className="flex items-center gap-3 py-2.5 text-sm">
+        <li key={player.id} className="flex items-center gap-3 py-3">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-divider/70 text-xs font-bold text-ink-muted">
             {player.jerseyNo ?? "–"}
           </span>
-          <span className="min-w-0 flex-1 truncate font-semibold text-ink">{player.name}</span>
-          {player.status === "NOT_GOING" && player.absenceReason && (
-            <span className="text-xs font-medium text-ink-subtle">
-              {REASON_LABELS[player.absenceReason] ?? player.absenceReason}
-            </span>
-          )}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold text-ink">{player.name}</div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-subtle">
+              <span>{player.position ?? "Position saknas"}</span>
+              {player.status === "NOT_GOING" && player.absenceReason && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="font-semibold text-signal">
+                    {REASON_LABELS[player.absenceReason] ?? player.absenceReason}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
         </li>
       ))}
     </ul>
@@ -140,23 +149,27 @@ export function AttendanceControls({
       )}
 
       {showLineup && (
-        <div className="mt-3 rounded-xl border border-divider bg-white/90 p-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <section>
-              <h4 className="text-xs font-bold uppercase tracking-[0.08em] text-success">
-                Kommer · {going.length}
+        <div className="mt-3 rounded-2xl border-2 border-ink/15 bg-white/95 p-4 shadow-inner">
+          <div className="flex items-end justify-between gap-3 border-b border-divider pb-3">
+            <h3 className="text-base font-bold text-ink">Laguppställning</h3>
+            <span className="text-xs font-semibold text-ink-subtle">{lineup.length} spelare</span>
+          </div>
+          <div>
+            <section className="py-4">
+              <h4 className="text-sm font-bold uppercase tracking-[0.08em] text-success">
+                Kommer <span className="text-ink-subtle">({going.length})</span>
               </h4>
               <PlayerList players={going} emptyText="Ingen har tackat ja än." />
             </section>
-            <section>
-              <h4 className="text-xs font-bold uppercase tracking-[0.08em] text-signal">
-                Kommer inte · {notGoing.length}
+            <section className="border-t border-divider py-4">
+              <h4 className="text-sm font-bold uppercase tracking-[0.08em] text-signal">
+                Kommer inte <span className="text-ink-subtle">({notGoing.length})</span>
               </h4>
               <PlayerList players={notGoing} emptyText="Ingen har tackat nej." />
             </section>
-            <section>
-              <h4 className="text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle">
-                Ej svarat · {unanswered.length}
+            <section className="border-t border-divider pt-4">
+              <h4 className="text-sm font-bold uppercase tracking-[0.08em] text-ink-subtle">
+                Ej svarat <span>({unanswered.length})</span>
               </h4>
               <PlayerList players={unanswered} emptyText="Alla har svarat." />
             </section>

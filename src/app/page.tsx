@@ -58,22 +58,22 @@ export default async function Home() {
 
         {featuredEvents.map(({ kind, item }) => {
           const isTraining = kind === "training";
-          const registration = item.registrations.find(
-            (candidate) => candidate.userId === currentUserId,
+          const registrationByUser = new Map(
+            item.registrations.map((candidate) => [candidate.userId, candidate]),
           );
+          const registration = registrationByUser.get(currentUserId);
           const respond = isTraining ? respondToTraining : respondToMatch;
           const idField = isTraining ? "trainingId" : "matchId";
           const title = isTraining
             ? "Träning"
             : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
           const lineup = roster.map((member) => {
-            const playerRegistration = item.registrations.find(
-              (candidate) => candidate.userId === member.userId,
-            );
+            const playerRegistration = registrationByUser.get(member.userId);
             return {
               id: member.userId,
               name: member.user.name ?? "Okänd spelare",
               jerseyNo: member.jerseyNo,
+              position: member.position,
               status: playerRegistration?.status ?? null,
               absenceReason: playerRegistration?.absenceReason ?? null,
             };
