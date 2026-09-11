@@ -1,4 +1,3 @@
-import { addHighlight, removeHighlight } from "@/app/actions";
 import { ContextSwitcher } from "@/components/ContextSwitcher";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow } from "@/components/ui";
@@ -50,46 +49,13 @@ export default async function Home() {
         />
 
         <Card className="p-5">
-          <div className="mb-4">
-            <Eyebrow tone="heading">Highlights</Eyebrow>
-            <h2 className="mt-1 text-xl font-bold text-ink">Lagets klipp</h2>
-          </div>
-          <form action={addHighlight} className="space-y-2.5">
-            <input type="hidden" name="teamId" value={team.id} />
-            <label className="block">
-              <span className="sr-only">Namn på klippet</span>
-              <input
-                name="title"
-                type="text"
-                maxLength={80}
-                placeholder="Namn på klippet (valfritt)"
-                className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-base text-ink outline-none placeholder:text-ink-subtle focus:border-ink"
-              />
-            </label>
-            <div className="flex gap-2">
-              <label className="min-w-0 flex-1">
-                <span className="sr-only">YouTube-länk</span>
-                <input
-                  name="url"
-                  type="url"
-                  inputMode="url"
-                  required
-                  placeholder="https://youtube.com/..."
-                  className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-base text-ink outline-none placeholder:text-ink-subtle focus:border-ink"
-                />
-              </label>
-              <button type="submit" className="h-11 shrink-0 rounded-xl bg-signal px-4 text-sm font-bold text-white transition-opacity hover:opacity-90">
-                Lägg till
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-4">
+          <Eyebrow tone="heading">Highlights</Eyebrow>
+          <div className="mt-3">
             {highlights.length === 0 ? (
-              <p className="border-t border-divider pt-4 text-sm text-ink-subtle">Inga klipp har lagts till än.</p>
+              <p className="text-sm text-ink-subtle">Inga highlights har lagts till än.</p>
             ) : null}
             {highlights.map((highlight) => (
-              <div key={highlight.id} className="flex items-center gap-3 border-t border-divider py-3 first:mt-1">
+              <div key={highlight.id} className="flex items-center gap-3 border-t border-divider py-3 first:border-t-0 first:pt-0">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signal text-sm text-white">▶</span>
                 <div className="min-w-0 flex-1">
                   <a href={highlight.url} target="_blank" rel="noreferrer" className="block truncate text-[15px] font-bold text-ink underline decoration-divider underline-offset-4">
@@ -97,14 +63,6 @@ export default async function Home() {
                   </a>
                   <span className="text-[12px] text-ink-subtle">Länkat av {highlight.author.name ?? "spelare"}</span>
                 </div>
-                {highlight.authorId === user.id ? (
-                  <form action={removeHighlight}>
-                    <input type="hidden" name="highlightId" value={highlight.id} />
-                    <button type="submit" className="rounded-lg px-2 py-2 text-sm font-semibold text-ink-subtle hover:bg-divider/50" aria-label={`Ta bort ${highlight.title}`}>
-                      Ta bort
-                    </button>
-                  </form>
-                ) : null}
               </div>
             ))}
           </div>

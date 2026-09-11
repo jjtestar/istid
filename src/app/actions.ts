@@ -9,18 +9,6 @@ const RSVP_STATUSES = new Set(["GOING", "NOT_GOING"]);
 const ABSENCE_REASONS = new Set(["TIRED", "SICK", "VACATION", "OTHER"]);
 const PLAYER_POSITIONS = new Set(["Forward", "Back", "Målvakt"]);
 
-function normalizeYouTubeUrl(value: string) {
-  try {
-    const url = new URL(value);
-    const host = url.hostname.toLowerCase().replace(/^www\./, "");
-    if (url.protocol !== "https:") return null;
-    if (host !== "youtube.com" && host !== "m.youtube.com" && host !== "youtu.be") return null;
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
-
 function getResponse(formData: FormData) {
   const status = String(formData.get("status") ?? "");
   const requestedReason = String(formData.get("absenceReason") ?? "");
@@ -112,36 +100,4 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/lag");
   revalidatePath("/statistik");
   revalidatePath("/min-profil");
-}
-
-export async function addHighlight(formData: FormData) {
-  const { user, team } = await getCurrentUserWithTeam();
-  const requestedTeamId = String(formData.get("teamId") ?? "");
-  const url = normalizeYouTubeUrl(String(formData.get("url") ?? "").trim());
-  const title = String(formData.get("title") ?? "").trim().slice(0, 80);
-
-  if (!team || requestedTeamId !== team.id || !url) return;
-
-  await prisma.highlight.create({
-    data: {
-      teamId: team.id,
-      authorId: user.id,
-      title: title || "YouTube-klipp",
-      url,
-    },
-  });
-
-  revalidatePath("/");
-}
-
-export async function removeHighlight(formData: FormData) {
-  const { user, team } = await getCurrentUserWithTeam();
-  const highlightId = String(formData.get("highlightId") ?? "");
-  if (!team || !highlightId) return;
-
-  await prisma.highlight.deleteMany({
-    where: { id: highlightId, teamId: team.id, authorId: user.id },
-  });
-
-  revalidatePath("/");
 }
