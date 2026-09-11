@@ -47,7 +47,7 @@ body {
   transform: translateX(-50%);
   pointer-events: none;
   background-image:
-    linear-gradient(rgb(255 255 255 / 38%), rgb(255 255 255 / 38%)),
+    linear-gradient(rgb(255 255 255 / 72%), rgb(255 255 255 / 72%)),
     url("/rink-background.png");
   background-position: center;
   background-repeat: no-repeat;
