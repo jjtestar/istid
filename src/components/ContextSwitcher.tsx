@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { changeAppContext } from "@/app/actions";
 
 type TeamOption = { name: string; slug: string };
@@ -15,6 +16,12 @@ export function ContextSwitcher({
   selectedTeamSlug: string;
   selectedSeason: string;
 }) {
+  const [teamValue, setTeamValue] = useState(selectedTeamSlug);
+  const [seasonValue, setSeasonValue] = useState(selectedSeason);
+
+  useEffect(() => setTeamValue(selectedTeamSlug), [selectedTeamSlug]);
+  useEffect(() => setSeasonValue(selectedSeason), [selectedSeason]);
+
   return (
     <form
       action={changeAppContext}
@@ -25,9 +32,12 @@ export function ContextSwitcher({
         <select
           aria-label="Lag"
           className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-[15px] font-bold text-ink outline-none focus:border-ink"
-          value={selectedTeamSlug}
+          value={teamValue}
           name="teamSlug"
-          onChange={(event) => event.currentTarget.form?.requestSubmit()}
+          onChange={(event) => {
+            setTeamValue(event.currentTarget.value);
+            event.currentTarget.form?.requestSubmit();
+          }}
         >
           {teams.map((team) => (
             <option key={team.slug} value={team.slug}>
@@ -41,9 +51,12 @@ export function ContextSwitcher({
         <select
           aria-label="Säsong"
           className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-[15px] font-bold text-ink outline-none focus:border-ink"
-          value={selectedSeason}
+          value={seasonValue}
           name="season"
-          onChange={(event) => event.currentTarget.form?.requestSubmit()}
+          onChange={(event) => {
+            setSeasonValue(event.currentTarget.value);
+            event.currentTarget.form?.requestSubmit();
+          }}
         >
           {seasons.map((season) => (
             <option key={season} value={season}>
