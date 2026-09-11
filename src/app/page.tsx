@@ -26,6 +26,12 @@ export default async function Home() {
     <div>
       <PageHeader title="Hem" />
       <main className="space-y-4 px-5 pb-8">
+        <header>
+          <h2 className="text-[28px] font-bold leading-tight tracking-tight text-ink">
+            Hej, {user.name}
+          </h2>
+        </header>
+
         <Card className="overflow-hidden p-5">
           <div className="flex items-start justify-between gap-4">
             <Eyebrow tone="heading">Information</Eyebrow>
