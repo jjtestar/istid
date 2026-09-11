@@ -71,10 +71,45 @@ function nextWeekday(weekday: number, hour: number) {
   return date;
 }
 
+function gameStats(
+  playerIndex: number,
+  matchIndex: number,
+  teamIndex: number,
+  seasonIndex: number,
+  ownScore: number,
+) {
+  if (playerIndex === 4) {
+    return {
+      goals: 0,
+      assists: ownScore > 0 && (matchIndex + teamIndex + seasonIndex) % 5 === 0 ? 1 : 0,
+      penaltyMinutes: (matchIndex + teamIndex + seasonIndex) % 7 === 0 ? 2 : 0,
+    };
+  }
+
+  let goals = 0;
+  let assists = 0;
+  for (let goalIndex = 0; goalIndex < ownScore; goalIndex += 1) {
+    const scorer = (goalIndex * 3 + matchIndex + teamIndex + seasonIndex) % 4;
+    const primaryAssist = (scorer + 1 + (matchIndex % 2)) % 4;
+    const secondaryAssist = (scorer + 2 + (teamIndex % 2)) % 4;
+    if (scorer === playerIndex) goals += 1;
+    if (primaryAssist === playerIndex) assists += 1;
+    if (secondaryAssist !== primaryAssist && secondaryAssist !== scorer && secondaryAssist === playerIndex) {
+      assists += 1;
+    }
+  }
+
+  const penaltySeed = playerIndex * 3 + matchIndex + teamIndex + seasonIndex;
+  return {
+    goals,
+    assists,
+    penaltyMinutes: penaltySeed % 5 === 0 ? 4 : penaltySeed % 3 === 0 ? 2 : 0,
+  };
+}
+
 async function main() {
   const passwordHash = await bcrypt.hash("istid1234", 10);
 
-  // The user explicitly replaced the original demo team with the three clubs below.
   await prisma.team.deleteMany({ where: { name: "A-laget" } });
 
   for (const [teamIndex, teamDefinition] of teams.entries()) {
@@ -87,7 +122,7 @@ async function main() {
       });
     }
 
-    for (const season of seasons) {
+    for (const [seasonIndex, season] of seasons.entries()) {
       const seasonKey = safeSeason(season);
       const teamId = `team-${teamDefinition.slug}-${seasonKey}`;
       await prisma.team.upsert({
@@ -121,7 +156,8 @@ async function main() {
         });
         for (const [playerIndex, player] of teamDefinition.players.entries()) {
           const userId = player[0];
-          const attended = (playerIndex + trainingIndex + teamIndex) % 5 !== 0;
+          const attendanceSeed = playerIndex * 2 + trainingIndex + teamIndex + seasonIndex;
+          const attended = attendanceSeed % (playerIndex === 4 ? 4 : 6) !== 0;
           await prisma.trainingRegistration.upsert({
             where: { trainingId_userId: { trainingId, userId } },
             update: { status: "GOING", attended },
@@ -133,7 +169,7 @@ async function main() {
       for (let matchIndex = 0; matchIndex < opponents.length; matchIndex += 1) {
         const matchId = `match-${teamDefinition.slug}-${seasonKey}-${matchIndex}`;
         const isHome = matchIndex % 2 === 0;
-        const [ownScore, opponentScore] = results[(teamIndex + seasons.indexOf(season)) % results.length][matchIndex];
+        const [ownScore, opponentScore] = results[(teamIndex + seasonIndex) % results.length][matchIndex];
         const homeScore = isHome ? ownScore : opponentScore;
         const awayScore = isHome ? opponentScore : ownScore;
         await prisma.match.upsert({
@@ -161,9 +197,13 @@ async function main() {
 
         for (const [playerIndex, player] of teamDefinition.players.entries()) {
           const userId = player[0];
-          const goals = playerIndex < 4 ? Math.floor(ownScore / 4) + (playerIndex < ownScore % 4 ? 1 : 0) : 0;
-          const assists = playerIndex < 4 && ownScore > 0 && (playerIndex + matchIndex) % 2 === 0 ? 1 : 0;
-          const penaltyMinutes = (playerIndex + matchIndex + teamIndex) % 6 === 0 ? 2 : 0;
+          const { goals, assists, penaltyMinutes } = gameStats(
+            playerIndex,
+            matchIndex,
+            teamIndex,
+            seasonIndex,
+            ownScore,
+          );
           await prisma.matchRegistration.upsert({
             where: { matchId_userId: { matchId, userId } },
             update: { status: "GOING" },
@@ -209,7 +249,7 @@ async function main() {
     }
   }
 
-  console.log("Seeded three hockey teams across three seasons with 15 players.");
+  console.log("Seeded three hockey teams across three seasons with individual player statistics.");
 }
 
 main()

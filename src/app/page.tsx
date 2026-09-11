@@ -1,4 +1,3 @@
-import { ContextSwitcher } from "@/components/ContextSwitcher";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
@@ -6,7 +5,7 @@ import { formatDateHeader, formatTime } from "@/lib/format";
 import { getCalendarEvents, getTeamHighlights } from "@/lib/queries";
 
 export default async function Home() {
-  const { user, team, context } = await getCurrentUserWithTeam();
+  const { user, team } = await getCurrentUserWithTeam();
 
   if (!team) {
     return (
@@ -46,13 +45,6 @@ export default async function Home() {
             Här visas viktig information från {team.name}.
           </p>
         </Card>
-
-        <ContextSwitcher
-          teams={context.teams}
-          seasons={context.seasons}
-          selectedTeamSlug={context.selectedTeamSlug}
-          selectedSeason={context.selectedSeason}
-        />
 
         <Card className="p-5">
           <Eyebrow tone="heading">Highlights</Eyebrow>

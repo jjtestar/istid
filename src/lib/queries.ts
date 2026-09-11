@@ -63,12 +63,14 @@ export async function getStats(userId: string, teamId: string) {
   ]);
   const goals = matchStats.reduce((sum, stat) => sum + stat.goals, 0);
   const assists = matchStats.reduce((sum, stat) => sum + stat.assists, 0);
+  const penaltyMinutes = matchStats.reduce((sum, stat) => sum + stat.penaltyMinutes, 0);
   const attendedCount = trainingRegistrations.filter((registration) => registration.attended).length;
   return {
     matchesPlayed: matchStats.length,
     goals,
     assists,
     points: goals + assists,
+    penaltyMinutes,
     recentMatches: matchStats.slice(0, 4),
     trainingsAttended: attendedCount,
     trainingsTotal: trainingRegistrations.length,
@@ -133,6 +135,7 @@ export async function getTeamStats(teamId: string) {
       const assists = stats.reduce((sum, stat) => sum + stat.assists, 0);
       return {
         id: member.id,
+        userId: member.userId,
         name: member.user.name,
         jerseyNo: member.jerseyNo,
         position: member.position,

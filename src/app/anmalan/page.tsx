@@ -37,6 +37,7 @@ export default async function AnmalanPage() {
           seasons={context.seasons}
           selectedTeamSlug={context.selectedTeamSlug}
           selectedSeason={context.selectedSeason}
+          showSeason={false}
         />
 
         {featuredEvents.length === 0 ? (

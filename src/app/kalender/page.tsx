@@ -58,6 +58,7 @@ export default async function KalenderPage() {
           seasons={context.seasons}
           selectedTeamSlug={context.selectedTeamSlug}
           selectedSeason={context.selectedSeason}
+          showSeason={false}
         />
 
         <Card className="p-4">

@@ -10,11 +10,13 @@ export function ContextSwitcher({
   seasons,
   selectedTeamSlug,
   selectedSeason,
+  showSeason = true,
 }: {
   teams: TeamOption[];
   seasons: string[];
   selectedTeamSlug: string;
   selectedSeason: string;
+  showSeason?: boolean;
 }) {
   const [teamValue, setTeamValue] = useState(selectedTeamSlug);
   const [seasonValue, setSeasonValue] = useState(selectedSeason);
@@ -30,12 +32,12 @@ export function ContextSwitcher({
   return (
     <form
       action={submitContext}
-      className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)] gap-2 rounded-2xl border border-divider bg-white/[0.92] p-2 shadow-[0_8px_24px_rgb(13_59_102_/_0.07)] backdrop-blur-[2px]"
+      className={`${showSeason ? "grid grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)]" : ""} gap-2 rounded-2xl border border-divider bg-white/[0.92] p-2 shadow-[0_8px_24px_rgb(13_59_102_/_0.07)] backdrop-blur-[2px]`}
     >
-      <div className="col-span-2 flex items-center gap-2 px-1 pt-1">
+      <div className={`${showSeason ? "col-span-2" : ""} flex items-center gap-2 px-1 pt-1`}>
         <span className="h-4 w-1 rounded-full bg-signal" aria-hidden="true" />
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-ink-subtle">
-          Välj: Lag och Säsong
+          {showSeason ? "Välj: Lag och Säsong" : "Välj lag"}
         </p>
       </div>
       <label className="min-w-0">
@@ -57,25 +59,29 @@ export function ContextSwitcher({
           ))}
         </select>
       </label>
-      <label className="min-w-0">
-        <span className="sr-only">Säsong</span>
-        <select
-          aria-label="Säsong"
-          className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-[15px] font-bold text-ink outline-none focus:border-ink"
-          value={seasonValue}
-          name="season"
-          onChange={(event) => {
-            setSeasonValue(event.currentTarget.value);
-            event.currentTarget.form?.requestSubmit();
-          }}
-        >
-          {seasons.map((season) => (
-            <option key={season} value={season}>
-              {season}
-            </option>
-          ))}
-        </select>
-      </label>
+      {showSeason ? (
+        <label className="min-w-0">
+          <span className="sr-only">Säsong</span>
+          <select
+            aria-label="Säsong"
+            className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-[15px] font-bold text-ink outline-none focus:border-ink"
+            value={seasonValue}
+            name="season"
+            onChange={(event) => {
+              setSeasonValue(event.currentTarget.value);
+              event.currentTarget.form?.requestSubmit();
+            }}
+          >
+            {seasons.map((season) => (
+              <option key={season} value={season}>
+                {season}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <input type="hidden" name="season" value={seasonValue} />
+      )}
     </form>
   );
 }
