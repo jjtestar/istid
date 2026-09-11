@@ -28,17 +28,17 @@ export default async function Home() {
       <main className="space-y-4 px-5 pb-8">
         <Card className="overflow-hidden p-5">
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <Eyebrow tone="heading">Information</Eyebrow>
-              <h2 className="mt-2 text-xl font-bold text-ink">Hej, {user.name}</h2>
-              <p className="mt-2 text-base leading-6 text-ink-muted">
-                Här visas viktig information från {team.name}.
-              </p>
+            <Eyebrow tone="heading">Information</Eyebrow>
+            <div className="shrink-0 text-right">
+              <div className="text-xs font-semibold text-ink-subtle">Publicerad</div>
+              <time dateTime="2026-09-11" className="text-sm font-bold text-ink">
+                11 september 2026
+              </time>
             </div>
-            <span className="shrink-0 rounded-full border border-divider bg-white px-3 py-1.5 text-xs font-bold text-ink-subtle">
-              {team.season}
-            </span>
           </div>
+          <p className="mt-4 text-base leading-6 text-ink-muted">
+            Här visas viktig information från {team.name}.
+          </p>
         </Card>
 
         <ContextSwitcher
