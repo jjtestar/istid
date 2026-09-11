@@ -30,10 +30,10 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
 
-  teams               TeamMember[]
+  teams                 TeamMember[]
   trainingRegistrations TrainingRegistration[]
-  matchRegistrations     MatchRegistration[]
-  matchStats             MatchStat[]
+  matchRegistrations    MatchRegistration[]
+  matchStats            MatchStat[]
 }
 
 model Team {
@@ -68,17 +68,18 @@ model Training {
   notes     String?
   createdAt DateTime @default(now())
 
-  team          Team                    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  team          Team                   @relation(fields: [teamId], references: [id], onDelete: Cascade)
   registrations TrainingRegistration[]
 }
 
 model TrainingRegistration {
-  id         String     @id @default(cuid())
-  trainingId String
-  userId     String
-  status     RsvpStatus @default(GOING)
-  attended   Boolean?
-  createdAt  DateTime   @default(now())
+  id            String     @id @default(cuid())
+  trainingId    String
+  userId        String
+  status        RsvpStatus @default(GOING)
+  absenceReason String?
+  attended      Boolean?
+  createdAt     DateTime   @default(now())
 
   training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -103,11 +104,12 @@ model Match {
 }
 
 model MatchRegistration {
-  id       String     @id @default(cuid())
-  matchId  String
-  userId   String
-  status   RsvpStatus @default(GOING)
-  createdAt DateTime  @default(now())
+  id            String     @id @default(cuid())
+  matchId       String
+  userId        String
+  status        RsvpStatus @default(GOING)
+  absenceReason String?
+  createdAt     DateTime   @default(now())
 
   match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -116,12 +118,12 @@ model MatchRegistration {
 }
 
 model MatchStat {
-  id      String @id @default(cuid())
-  matchId String
-  userId  String
-  goals   Int    @default(0)
-  assists Int    @default(0)
-  penaltyMinutes Int @default(0)
+  id             String @id @default(cuid())
+  matchId        String
+  userId         String
+  goals          Int    @default(0)
+  assists        Int    @default(0)
+  penaltyMinutes Int    @default(0)
 
   match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)

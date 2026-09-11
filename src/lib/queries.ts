@@ -2,19 +2,24 @@ import { prisma } from "@/lib/prisma";
 
 export async function getDashboardData(userId: string, teamId: string) {
   const now = new Date();
-  const [nextTraining, nextMatch] = await Promise.all([
+  const [nextTraining, nextMatch, roster] = await Promise.all([
     prisma.training.findFirst({
       where: { teamId, startsAt: { gte: now } },
       orderBy: { startsAt: "asc" },
-      include: { registrations: { where: { userId } } },
+      include: { registrations: true },
     }),
     prisma.match.findFirst({
       where: { teamId, startsAt: { gte: now } },
       orderBy: { startsAt: "asc" },
-      include: { registrations: { where: { userId } } },
+      include: { registrations: true },
+    }),
+    prisma.teamMember.findMany({
+      where: { teamId },
+      include: { user: true },
+      orderBy: { jerseyNo: "asc" },
     }),
   ]);
-  return { nextTraining, nextMatch };
+  return { nextTraining, nextMatch, roster, currentUserId: userId };
 }
 
 export async function getCalendarEvents(userId: string, teamId: string, days = 21, historic = false) {

@@ -1,7 +1,8 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
-import { PageHeader } from "@/components/PageHeader";
+import { AttendanceControls } from "@/components/AttendanceControls";
 import { ContextSwitcher } from "@/components/ContextSwitcher";
-import { Card, Eyebrow, ResponseToggle, StatusLabel } from "@/components/ui";
+import { PageHeader } from "@/components/PageHeader";
+import { Card, Eyebrow, StatusLabel } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
 import { getCalendarEvents, getDashboardData } from "@/lib/queries";
@@ -17,7 +18,7 @@ export default async function Home() {
     );
   }
 
-  const [{ nextTraining, nextMatch }, events] = await Promise.all([
+  const [{ nextTraining, nextMatch, roster, currentUserId }, events] = await Promise.all([
     getDashboardData(user.id, team.id),
     getCalendarEvents(user.id, team.id, 7),
   ]);
@@ -57,12 +58,26 @@ export default async function Home() {
 
         {featuredEvents.map(({ kind, item }) => {
           const isTraining = kind === "training";
-          const going = item.registrations[0]?.status === "GOING";
+          const registration = item.registrations.find(
+            (candidate) => candidate.userId === currentUserId,
+          );
           const respond = isTraining ? respondToTraining : respondToMatch;
           const idField = isTraining ? "trainingId" : "matchId";
           const title = isTraining
             ? "Träning"
             : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
+          const lineup = roster.map((member) => {
+            const playerRegistration = item.registrations.find(
+              (candidate) => candidate.userId === member.userId,
+            );
+            return {
+              id: member.userId,
+              name: member.user.name ?? "Okänd spelare",
+              jerseyNo: member.jerseyNo,
+              status: playerRegistration?.status ?? null,
+              absenceReason: playerRegistration?.absenceReason ?? null,
+            };
+          });
 
           return (
             <Card key={`${kind}:${item.id}`} className="overflow-hidden p-4">
@@ -92,12 +107,14 @@ export default async function Home() {
                 </div>
               </div>
 
-              <div className="mt-4 flex justify-center border-t border-divider pt-4">
-                <ResponseToggle
+              <div className="mt-4 border-t border-divider pt-4">
+                <AttendanceControls
                   formAction={respond}
                   idField={idField}
                   idValue={item.id}
-                  going={going}
+                  status={registration?.status ?? null}
+                  absenceReason={registration?.absenceReason ?? null}
+                  lineup={lineup}
                 />
               </div>
             </Card>

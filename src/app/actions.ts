@@ -5,6 +5,22 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser, teamSlug } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
+const RSVP_STATUSES = new Set(["GOING", "NOT_GOING"]);
+const ABSENCE_REASONS = new Set(["TIRED", "SICK", "VACATION", "OTHER"]);
+
+function getResponse(formData: FormData) {
+  const status = String(formData.get("status") ?? "");
+  const requestedReason = String(formData.get("absenceReason") ?? "");
+
+  if (!RSVP_STATUSES.has(status)) return null;
+  if (status === "NOT_GOING" && !ABSENCE_REASONS.has(requestedReason)) return null;
+
+  return {
+    status: status as "GOING" | "NOT_GOING",
+    absenceReason: status === "NOT_GOING" ? requestedReason : null,
+  };
+}
+
 export async function changeAppContext(formData: FormData) {
   await getCurrentUser();
   const requestedTeam = String(formData.get("teamSlug") ?? "");
@@ -24,14 +40,15 @@ export async function changeAppContext(formData: FormData) {
 }
 
 export async function respondToTraining(formData: FormData) {
-  const trainingId = formData.get("trainingId") as string;
-  const status = formData.get("status") as "GOING" | "NOT_GOING";
+  const trainingId = String(formData.get("trainingId") ?? "");
+  const response = getResponse(formData);
+  if (!trainingId || !response) return;
   const user = await getCurrentUser();
 
   await prisma.trainingRegistration.upsert({
     where: { trainingId_userId: { trainingId, userId: user.id } },
-    update: { status },
-    create: { trainingId, userId: user.id, status },
+    update: response,
+    create: { trainingId, userId: user.id, ...response },
   });
 
   revalidatePath("/");
@@ -39,14 +56,15 @@ export async function respondToTraining(formData: FormData) {
 }
 
 export async function respondToMatch(formData: FormData) {
-  const matchId = formData.get("matchId") as string;
-  const status = formData.get("status") as "GOING" | "NOT_GOING";
+  const matchId = String(formData.get("matchId") ?? "");
+  const response = getResponse(formData);
+  if (!matchId || !response) return;
   const user = await getCurrentUser();
 
   await prisma.matchRegistration.upsert({
     where: { matchId_userId: { matchId, userId: user.id } },
-    update: { status },
-    create: { matchId, userId: user.id, status },
+    update: response,
+    create: { matchId, userId: user.id, ...response },
   });
 
   revalidatePath("/");
