@@ -1,7 +1,7 @@
 import type { NextFetchEvent, NextMiddleware, NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 
-const authenticatedProxy = auth(() => undefined) as NextMiddleware;
+const authenticatedProxy = auth(() => undefined) as unknown as NextMiddleware;
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
   return authenticatedProxy(request, event);
