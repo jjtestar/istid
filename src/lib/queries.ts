@@ -157,3 +157,12 @@ export async function getTeamStats(teamId: string) {
     playerStats,
   };
 }
+
+export async function getTeamHighlights(teamId: string) {
+  return prisma.highlight.findMany({
+    where: { teamId },
+    include: { author: { select: { id: true, name: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+  });
+}

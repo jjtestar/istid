@@ -49,6 +49,24 @@ export function ChartIcon({ className }: IconProps) {
   );
 }
 
+export function CheckIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="3.5" y="4" width="17" height="16" rx="2.5" />
+      <path d="m8 12 2.5 2.5L16.5 9" />
+    </svg>
+  );
+}
+
+export function ProfileIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 20a7 7 0 0 1 14 0" />
+    </svg>
+  );
+}
+
 export function BellIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className}>

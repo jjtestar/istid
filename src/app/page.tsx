@@ -1,11 +1,10 @@
-import { respondToMatch, respondToTraining } from "@/app/actions";
-import { AttendanceControls } from "@/components/AttendanceControls";
+import { addHighlight, removeHighlight } from "@/app/actions";
 import { ContextSwitcher } from "@/components/ContextSwitcher";
 import { PageHeader } from "@/components/PageHeader";
-import { Card, Eyebrow, StatusLabel } from "@/components/ui";
+import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
-import { getCalendarEvents, getDashboardData } from "@/lib/queries";
+import { getCalendarEvents, getTeamHighlights } from "@/lib/queries";
 
 export default async function Home() {
   const { user, team, context } = await getCurrentUserWithTeam();
@@ -18,36 +17,30 @@ export default async function Home() {
     );
   }
 
-  const [{ nextTraining, nextMatch, roster, currentUserId }, events] = await Promise.all([
-    getDashboardData(user.id, team.id),
-    getCalendarEvents(user.id, team.id, 7),
+  const [historicEvents, highlights] = await Promise.all([
+    getCalendarEvents(user.id, team.id, 1, true),
+    getTeamHighlights(team.id),
   ]);
-
-  const featuredEvents = [
-    nextTraining && { kind: "training" as const, item: nextTraining },
-    nextMatch && { kind: "match" as const, item: nextMatch },
-  ]
-    .filter((event): event is NonNullable<typeof event> => event !== null)
-    .sort((a, b) => a.item.startsAt.getTime() - b.item.startsAt.getTime());
-
-  const featuredKeys = new Set(featuredEvents.map((event) => `${event.kind}:${event.item.id}`));
-  const week = events
-    .filter((event) => !featuredKeys.has(`${event.kind}:${event.item.id}`))
-    .slice(0, 3);
+  const latest = historicEvents[0] ?? null;
 
   return (
     <div>
       <PageHeader title="Hem" />
-
       <main className="space-y-4 px-5 pb-8">
-        <header>
-          <h2 className="text-[28px] font-bold leading-tight tracking-tight text-ink">
-            Hej, {user.name}
-          </h2>
-          <p className="mt-1 text-sm text-ink-subtle">
-            {team.name} · {team.season}
-          </p>
-        </header>
+        <Card className="overflow-hidden p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <Eyebrow tone="heading">Information</Eyebrow>
+              <h2 className="mt-2 text-xl font-bold text-ink">Hej, {user.name}</h2>
+              <p className="mt-2 text-base leading-6 text-ink-muted">
+                Här visas viktig information från {team.name}.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full border border-divider bg-white px-3 py-1.5 text-xs font-bold text-ink-subtle">
+              {team.season}
+            </span>
+          </div>
+        </Card>
 
         <ContextSwitcher
           teams={context.teams}
@@ -56,114 +49,97 @@ export default async function Home() {
           selectedSeason={context.selectedSeason}
         />
 
-        {featuredEvents.map(({ kind, item }) => {
-          const isTraining = kind === "training";
-          const registrationByUser = new Map(
-            item.registrations.map((candidate) => [candidate.userId, candidate]),
-          );
-          const registration = registrationByUser.get(currentUserId);
-          const respond = isTraining ? respondToTraining : respondToMatch;
-          const idField = isTraining ? "trainingId" : "matchId";
-          const title = isTraining
-            ? "Träning"
-            : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
-          const lineup = roster.map((member) => {
-            const playerRegistration = registrationByUser.get(member.userId);
-            return {
-              id: member.userId,
-              name: member.user.name ?? "Okänd spelare",
-              jerseyNo: member.jerseyNo,
-              position: member.position,
-              status: playerRegistration?.status ?? null,
-              absenceReason: playerRegistration?.absenceReason ?? null,
-            };
-          });
-
-          return (
-            <Card key={`${kind}:${item.id}`} className="overflow-hidden p-4">
-              <div className="flex items-center justify-between gap-3">
-                <Eyebrow tone="heading">{isTraining ? "Nästa träning" : "Nästa match"}</Eyebrow>
-                <span className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
-                  {team.name}
-                </span>
-              </div>
-
-              <div className="mt-4 flex gap-4">
-                <div className="flex w-[72px] shrink-0 flex-col items-center justify-center rounded-xl border border-divider bg-white/80 px-2 py-3 text-center">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-subtle">
-                    {formatDateHeader(item.startsAt).slice(0, 3)}
-                  </span>
-                  <span className="text-[34px] font-bold leading-none text-ink">
-                    {item.startsAt.getDate()}
-                  </span>
-                </div>
-
-                <div className="min-w-0 flex-1 self-center">
-                  <h3 className="text-lg font-bold text-ink">{title}</h3>
-                  <p className="mt-2 text-sm font-semibold text-ink-muted">
-                    {formatDateHeader(item.startsAt)} · {formatTime(item.startsAt)}
-                  </p>
-                  <p className="mt-1 text-sm text-ink-subtle">{item.location}</p>
-                </div>
-              </div>
-
-              <div className="mt-4 border-t border-divider pt-4">
-                <AttendanceControls
-                  formAction={respond}
-                  idField={idField}
-                  idValue={item.id}
-                  status={registration?.status ?? null}
-                  absenceReason={registration?.absenceReason ?? null}
-                  lineup={lineup}
-                />
-              </div>
-            </Card>
-          );
-        })}
-
-        <Card className="p-4">
-          <Eyebrow>Veckan</Eyebrow>
-          <div className="mt-2">
-            {week.length === 0 && (
-              <p className="border-t border-divider py-3 text-[13.5px] text-ink-subtle">
-                Inga fler pass denna vecka.
-              </p>
-            )}
-            {week.map(({ kind, item }) => {
-              const going = item.registrations[0]?.status === "GOING";
-              const title =
-                kind === "training"
-                  ? "Träning"
-                  : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
-              const respond = kind === "training" ? respondToTraining : respondToMatch;
-              const idField = kind === "training" ? "trainingId" : "matchId";
-
-              return (
-                <div
-                  key={`${kind}:${item.id}`}
-                  className="flex items-center gap-3.5 border-t border-divider py-3"
-                >
-                  <span className="w-[46px] shrink-0 text-[13px] font-bold text-ink">
-                    {formatDateHeader(item.startsAt).slice(0, 3).toUpperCase()} {item.startsAt.getDate()}
-                  </span>
-                  <span className="flex-1 text-[15px] font-semibold text-ink">
-                    {title} {formatTime(item.startsAt)}
-                  </span>
-                  {going ? (
-                    <StatusLabel tone="success">Anmäld</StatusLabel>
-                  ) : (
-                    <form action={respond}>
-                      <input type="hidden" name={idField} value={item.id} />
-                      <input type="hidden" name="status" value="GOING" />
-                      <button type="submit">
-                        <StatusLabel tone="signal">Svara</StatusLabel>
-                      </button>
-                    </form>
-                  )}
-                </div>
-              );
-            })}
+        <Card className="p-5">
+          <div className="mb-4">
+            <Eyebrow tone="heading">Highlights</Eyebrow>
+            <h2 className="mt-1 text-xl font-bold text-ink">Lagets klipp</h2>
           </div>
+          <form action={addHighlight} className="space-y-2.5">
+            <input type="hidden" name="teamId" value={team.id} />
+            <label className="block">
+              <span className="sr-only">Namn på klippet</span>
+              <input
+                name="title"
+                type="text"
+                maxLength={80}
+                placeholder="Namn på klippet (valfritt)"
+                className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-base text-ink outline-none placeholder:text-ink-subtle focus:border-ink"
+              />
+            </label>
+            <div className="flex gap-2">
+              <label className="min-w-0 flex-1">
+                <span className="sr-only">YouTube-länk</span>
+                <input
+                  name="url"
+                  type="url"
+                  inputMode="url"
+                  required
+                  placeholder="https://youtube.com/..."
+                  className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-base text-ink outline-none placeholder:text-ink-subtle focus:border-ink"
+                />
+              </label>
+              <button type="submit" className="h-11 shrink-0 rounded-xl bg-signal px-4 text-sm font-bold text-white transition-opacity hover:opacity-90">
+                Lägg till
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-4">
+            {highlights.length === 0 ? (
+              <p className="border-t border-divider pt-4 text-sm text-ink-subtle">Inga klipp har lagts till än.</p>
+            ) : null}
+            {highlights.map((highlight) => (
+              <div key={highlight.id} className="flex items-center gap-3 border-t border-divider py-3 first:mt-1">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signal text-sm text-white">▶</span>
+                <div className="min-w-0 flex-1">
+                  <a href={highlight.url} target="_blank" rel="noreferrer" className="block truncate text-[15px] font-bold text-ink underline decoration-divider underline-offset-4">
+                    {highlight.title}
+                  </a>
+                  <span className="text-[12px] text-ink-subtle">Länkat av {highlight.author.name ?? "spelare"}</span>
+                </div>
+                {highlight.authorId === user.id ? (
+                  <form action={removeHighlight}>
+                    <input type="hidden" name="highlightId" value={highlight.id} />
+                    <button type="submit" className="rounded-lg px-2 py-2 text-sm font-semibold text-ink-subtle hover:bg-divider/50" aria-label={`Ta bort ${highlight.title}`}>
+                      Ta bort
+                    </button>
+                  </form>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <Eyebrow>Senast spelat</Eyebrow>
+          {latest ? (
+            <div className="mt-3 flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-ink text-white">
+                <span className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-75">
+                  {formatDateHeader(latest.item.startsAt).slice(0, 3)}
+                </span>
+                <span className="text-xl font-bold leading-none">{latest.item.startsAt.getDate()}</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-lg font-bold text-ink">
+                  {latest.kind === "training"
+                    ? "Träning"
+                    : `${latest.item.isHome ? "Hemma" : "Borta"} vs ${latest.item.opponent}`}
+                </div>
+                <div className="mt-1 text-sm text-ink-subtle">
+                  {formatDateHeader(latest.item.startsAt)} · {formatTime(latest.item.startsAt)}
+                </div>
+                <div className="mt-0.5 text-sm text-ink-subtle">{latest.item.location}</div>
+              </div>
+              {latest.kind === "match" && latest.item.homeScore !== null && latest.item.awayScore !== null ? (
+                <div className="shrink-0 text-2xl font-bold text-signal">
+                  {latest.item.homeScore}–{latest.item.awayScore}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-ink-subtle">Ingen spelad träning eller match hittades.</p>
+          )}
         </Card>
       </main>
     </div>

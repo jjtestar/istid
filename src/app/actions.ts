@@ -2,11 +2,24 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { getCurrentUser, teamSlug } from "@/lib/current-user";
+import { getCurrentUser, getCurrentUserWithTeam, teamSlug } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 const RSVP_STATUSES = new Set(["GOING", "NOT_GOING"]);
 const ABSENCE_REASONS = new Set(["TIRED", "SICK", "VACATION", "OTHER"]);
+const PLAYER_POSITIONS = new Set(["Forward", "Back", "Målvakt"]);
+
+function normalizeYouTubeUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    if (url.protocol !== "https:") return null;
+    if (host !== "youtube.com" && host !== "m.youtube.com" && host !== "youtu.be") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
 
 function getResponse(formData: FormData) {
   const status = String(formData.get("status") ?? "");
@@ -52,6 +65,7 @@ export async function respondToTraining(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/anmalan");
   revalidatePath("/kalender");
 }
 
@@ -68,5 +82,66 @@ export async function respondToMatch(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/anmalan");
   revalidatePath("/kalender");
+}
+
+export async function updateProfile(formData: FormData) {
+  const { user, membership } = await getCurrentUserWithTeam();
+  const name = String(formData.get("name") ?? "").trim().slice(0, 80);
+  const jerseyValue = String(formData.get("jerseyNo") ?? "").trim();
+  const requestedPosition = String(formData.get("position") ?? "").trim();
+
+  if (!name) return;
+
+  const parsedJerseyNo = jerseyValue === "" ? null : Number(jerseyValue);
+  const jerseyNo =
+    parsedJerseyNo !== null && Number.isInteger(parsedJerseyNo) && parsedJerseyNo >= 0 && parsedJerseyNo <= 99
+      ? parsedJerseyNo
+      : null;
+  const position = PLAYER_POSITIONS.has(requestedPosition) ? requestedPosition : null;
+
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: user.id }, data: { name } }),
+    ...(membership
+      ? [prisma.teamMember.update({ where: { id: membership.id }, data: { jerseyNo, position } })]
+      : []),
+  ]);
+
+  revalidatePath("/");
+  revalidatePath("/lag");
+  revalidatePath("/statistik");
+  revalidatePath("/min-profil");
+}
+
+export async function addHighlight(formData: FormData) {
+  const { user, team } = await getCurrentUserWithTeam();
+  const requestedTeamId = String(formData.get("teamId") ?? "");
+  const url = normalizeYouTubeUrl(String(formData.get("url") ?? "").trim());
+  const title = String(formData.get("title") ?? "").trim().slice(0, 80);
+
+  if (!team || requestedTeamId !== team.id || !url) return;
+
+  await prisma.highlight.create({
+    data: {
+      teamId: team.id,
+      authorId: user.id,
+      title: title || "YouTube-klipp",
+      url,
+    },
+  });
+
+  revalidatePath("/");
+}
+
+export async function removeHighlight(formData: FormData) {
+  const { user, team } = await getCurrentUserWithTeam();
+  const highlightId = String(formData.get("highlightId") ?? "");
+  if (!team || !highlightId) return;
+
+  await prisma.highlight.deleteMany({
+    where: { id: highlightId, teamId: team.id, authorId: user.id },
+  });
+
+  revalidatePath("/");
 }

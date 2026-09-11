@@ -34,6 +34,7 @@ model User {
   trainingRegistrations TrainingRegistration[]
   matchRegistrations    MatchRegistration[]
   matchStats            MatchStat[]
+  highlights            Highlight[]
 }
 
 model Team {
@@ -42,9 +43,10 @@ model Team {
   season    String
   createdAt DateTime @default(now())
 
-  members   TeamMember[]
-  trainings Training[]
-  matches   Match[]
+  members    TeamMember[]
+  trainings  Training[]
+  matches    Match[]
+  highlights Highlight[]
 }
 
 model TeamMember {
@@ -129,4 +131,18 @@ model MatchStat {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([matchId, userId])
+}
+
+model Highlight {
+  id        String   @id @default(cuid())
+  teamId    String
+  authorId  String
+  title     String
+  url       String
+  createdAt DateTime @default(now())
+
+  team   Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([teamId, createdAt])
 }
