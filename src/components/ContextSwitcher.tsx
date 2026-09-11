@@ -22,9 +22,14 @@ export function ContextSwitcher({
   useEffect(() => setTeamValue(selectedTeamSlug), [selectedTeamSlug]);
   useEffect(() => setSeasonValue(selectedSeason), [selectedSeason]);
 
+  async function submitContext(formData: FormData) {
+    await changeAppContext(formData);
+    window.location.reload();
+  }
+
   return (
     <form
-      action={changeAppContext}
+      action={submitContext}
       className="grid grid-cols-2 gap-2 rounded-2xl border border-divider bg-white/[0.92] p-2 shadow-[0_8px_24px_rgb(13_59_102_/_0.07)] backdrop-blur-[2px]"
     >
       <label className="min-w-0">
