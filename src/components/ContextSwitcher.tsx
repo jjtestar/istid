@@ -25,7 +25,7 @@ export function ContextSwitcher({
         <select
           aria-label="Lag"
           className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-[15px] font-bold text-ink outline-none focus:border-ink"
-          defaultValue={selectedTeamSlug}
+          value={selectedTeamSlug}
           name="teamSlug"
           onChange={(event) => event.currentTarget.form?.requestSubmit()}
         >
@@ -41,7 +41,7 @@ export function ContextSwitcher({
         <select
           aria-label="Säsong"
           className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-[15px] font-bold text-ink outline-none focus:border-ink"
-          defaultValue={selectedSeason}
+          value={selectedSeason}
           name="season"
           onChange={(event) => event.currentTarget.form?.requestSubmit()}
         >
