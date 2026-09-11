@@ -1,4 +1,11 @@
-export { auth as default } from "@/lib/auth";
+import type { NextFetchEvent, NextRequest } from "next/server";
+import { auth } from "@/lib/auth";
+
+const authenticatedProxy = auth(() => undefined);
+
+export default function proxy(request: NextRequest, event: NextFetchEvent) {
+  return authenticatedProxy(request, event);
+}
 
 export const config = {
   matcher: [
