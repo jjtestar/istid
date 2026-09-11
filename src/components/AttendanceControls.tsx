@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type RsvpStatus = "GOING" | "NOT_GOING" | "MAYBE" | null;
 
@@ -71,9 +72,31 @@ export function AttendanceControls({
 }) {
   const [showReasons, setShowReasons] = useState(status === "NOT_GOING");
   const [showLineup, setShowLineup] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const going = lineup.filter((player) => player.status === "GOING");
   const notGoing = lineup.filter((player) => player.status === "NOT_GOING");
   const unanswered = lineup.filter((player) => !player.status || player.status === "MAYBE");
+  const lineupTitleId = `lineup-title-${idValue}`;
+
+  useEffect(() => {
+    if (!showLineup) return;
+
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowLineup(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    closeButtonRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+      previousFocus?.focus();
+    };
+  }, [showLineup]);
 
   return (
     <div className="w-full">
@@ -109,6 +132,7 @@ export function AttendanceControls({
         <button
           type="button"
           aria-expanded={showLineup}
+          aria-controls={lineupTitleId}
           onClick={() => {
             setShowLineup((visible) => !visible);
             setShowReasons(false);
@@ -148,34 +172,59 @@ export function AttendanceControls({
         </form>
       )}
 
-      {showLineup && (
-        <div className="mt-3 rounded-2xl border-2 border-ink/15 bg-white/95 p-4 shadow-inner">
-          <div className="flex items-end justify-between gap-3 border-b border-divider pb-3">
-            <h3 className="text-base font-bold text-ink">Laguppställning</h3>
-            <span className="text-xs font-semibold text-ink-subtle">{lineup.length} spelare</span>
-          </div>
-          <div>
-            <section className="py-4">
-              <h4 className="text-sm font-bold uppercase tracking-[0.08em] text-success">
-                Kommer <span className="text-ink-subtle">({going.length})</span>
-              </h4>
-              <PlayerList players={going} emptyText="Ingen har tackat ja än." />
-            </section>
-            <section className="border-t border-divider py-4">
-              <h4 className="text-sm font-bold uppercase tracking-[0.08em] text-signal">
-                Kommer inte <span className="text-ink-subtle">({notGoing.length})</span>
-              </h4>
-              <PlayerList players={notGoing} emptyText="Ingen har tackat nej." />
-            </section>
-            <section className="border-t border-divider pt-4">
-              <h4 className="text-sm font-bold uppercase tracking-[0.08em] text-ink-subtle">
-                Ej svarat <span>({unanswered.length})</span>
-              </h4>
-              <PlayerList players={unanswered} emptyText="Alla har svarat." />
-            </section>
-          </div>
-        </div>
-      )}
+      {showLineup &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/55 p-4 backdrop-blur-sm"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setShowLineup(false);
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={lineupTitleId}
+              className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-divider bg-white p-5 shadow-[0_24px_80px_rgb(5_25_45_/_0.35)]"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-divider bg-white pb-4">
+                <div>
+                  <h3 id={lineupTitleId} className="text-xl font-bold text-ink">Laguppställning</h3>
+                  <p className="mt-0.5 text-sm text-ink-subtle">{lineup.length} spelare</p>
+                </div>
+                <button
+                  ref={closeButtonRef}
+                  type="button"
+                  aria-label="Stäng laguppställning"
+                  onClick={() => setShowLineup(false)}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-divider text-2xl leading-none text-ink transition-colors hover:bg-divider/50"
+                >
+                  ×
+                </button>
+              </div>
+
+              <section className="py-4">
+                <h4 className="text-sm font-bold uppercase tracking-[0.08em] text-success">
+                  Kommer <span className="text-ink-subtle">({going.length})</span>
+                </h4>
+                <PlayerList players={going} emptyText="Ingen har tackat ja än." />
+              </section>
+              <section className="border-t border-divider py-4">
+                <h4 className="text-sm font-bold uppercase tracking-[0.08em] text-signal">
+                  Kommer inte <span className="text-ink-subtle">({notGoing.length})</span>
+                </h4>
+                <PlayerList players={notGoing} emptyText="Ingen har tackat nej." />
+              </section>
+              <section className="border-t border-divider pt-4">
+                <h4 className="text-sm font-bold uppercase tracking-[0.08em] text-ink-subtle">
+                  Ej svarat <span>({unanswered.length})</span>
+                </h4>
+                <PlayerList players={unanswered} emptyText="Alla har svarat." />
+              </section>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
