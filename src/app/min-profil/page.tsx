@@ -1,6 +1,7 @@
 import { updateProfile } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow } from "@/components/ui";
+import { signOut } from "@/lib/auth";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 
 export default async function MinProfilPage() {
@@ -72,6 +73,20 @@ export default async function MinProfilPage() {
             </button>
           </form>
         </Card>
+
+        <form
+          action={async () => {
+            "use server";
+            await signOut({ redirectTo: "/login" });
+          }}
+        >
+          <button
+            type="submit"
+            className="h-12 w-full rounded-xl border border-divider bg-white/90 px-5 text-base font-bold text-signal transition-colors hover:bg-rink-line-red"
+          >
+            Logga ut
+          </button>
+        </form>
       </main>
     </div>
   );

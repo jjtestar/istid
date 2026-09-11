@@ -22,6 +22,7 @@ const tabs = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  if (pathname === "/login") return null;
 
   return (
     <nav className="sticky bottom-0 z-10 border-t-[3px] border-ink bg-surface" aria-label="Huvudmeny">
