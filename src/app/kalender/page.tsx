@@ -1,6 +1,6 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
-import { Eyebrow, StatusLabel } from "@/components/ui";
+import { Card, Eyebrow, StatusLabel } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { endTime, formatDateHeader, formatMonthYear, formatTime } from "@/lib/format";
 import { getCalendarEvents } from "@/lib/queries";
@@ -11,7 +11,7 @@ function dayKey(date: Date) {
 
 function startOfWeek(date: Date) {
   const d = new Date(date);
-  const diff = (d.getDay() + 6) % 7; // Monday = 0
+  const diff = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -50,40 +50,42 @@ export default async function KalenderPage() {
     <div>
       <PageHeader title="Kalender" />
 
-      <div className="px-5 pb-8">
-        <div className="border-t-2 border-divider pt-4">
-          <Eyebrow>{formatMonthYear(today)}</Eyebrow>
-          <div className="mt-3 grid grid-cols-7 gap-1 text-center">
-            {weekDates.map((d, i) => {
-              const isToday = dayKey(d) === dayKey(today);
+      <main className="space-y-5 px-5 pb-8">
+        <Card className="p-4">
+          <div className="text-center text-base font-bold text-ink">
+            {formatMonthYear(today)}
+          </div>
+          <div className="mt-4 grid grid-cols-7 gap-1 text-center">
+            {weekDates.map((date, index) => {
+              const isToday = dayKey(date) === dayKey(today);
               return (
-                <div key={i} className="flex flex-col items-center gap-1">
+                <div key={dayKey(date)} className="flex flex-col items-center gap-1.5">
                   <span className="text-[10px] font-semibold text-ink-subtle">
-                    {WEEKDAY_LABELS[i]}
+                    {WEEKDAY_LABELS[index]}
                   </span>
                   <span
                     className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
                       isToday ? "bg-ink text-white" : "text-ink"
                     }`}
                   >
-                    {d.getDate()}
+                    {date.getDate()}
                   </span>
                 </div>
               );
             })}
           </div>
-        </div>
+        </Card>
 
         {groups.size === 0 && (
-          <p className="mt-6 text-center text-sm text-ink-subtle">
+          <Card className="p-5 text-center text-sm text-ink-subtle">
             Inga kommande händelser just nu.
-          </p>
+          </Card>
         )}
 
         {Array.from(groups.values()).map(({ date, events: dayEvents }) => (
-          <div key={dayKey(date)} className="mt-6">
+          <section key={dayKey(date)}>
             <Eyebrow>{formatDateHeader(date)}</Eyebrow>
-            <div className="mt-2">
+            <div className="mt-2 space-y-2.5">
               {dayEvents.map(({ kind, item }) => {
                 const going = item.registrations[0]?.status === "GOING";
                 const title =
@@ -98,34 +100,39 @@ export default async function KalenderPage() {
                 const idField = kind === "training" ? "trainingId" : "matchId";
 
                 return (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-3.5 border-t-2 border-divider py-3"
-                  >
-                    <div className="flex-1">
-                      <div className="text-[15px] font-semibold text-ink">{title}</div>
-                      <div className="mt-0.5 text-[13px] text-ink-subtle">
-                        {time} · {item.location}
+                  <Card key={`${kind}:${item.id}`} className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-[58px] shrink-0 border-r border-divider pr-3">
+                        <div className="text-lg font-bold text-ink">{formatTime(item.startsAt)}</div>
+                        <div className="text-xs text-ink-subtle">
+                          {formatTime(endTime(item.startsAt, kind === "training" ? 90 : 120))}
+                        </div>
                       </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[15px] font-bold text-ink">{title}</div>
+                        <div className="mt-0.5 truncate text-[13px] text-ink-subtle">
+                          {time} · {item.location}
+                        </div>
+                      </div>
+                      {going ? (
+                        <StatusLabel tone="success">Anmäld</StatusLabel>
+                      ) : (
+                        <form action={respond}>
+                          <input type="hidden" name={idField} value={item.id} />
+                          <input type="hidden" name="status" value="GOING" />
+                          <button type="submit">
+                            <StatusLabel tone="signal">Svara</StatusLabel>
+                          </button>
+                        </form>
+                      )}
                     </div>
-                    {going ? (
-                      <StatusLabel tone="success">Anmäld</StatusLabel>
-                    ) : (
-                      <form action={respond}>
-                        <input type="hidden" name={idField} value={item.id} />
-                        <input type="hidden" name="status" value="GOING" />
-                        <button type="submit">
-                          <StatusLabel tone="signal">Svara</StatusLabel>
-                        </button>
-                      </form>
-                    )}
-                  </div>
+                  </Card>
                 );
               })}
             </div>
-          </div>
+          </section>
         ))}
-      </div>
+      </main>
     </div>
   );
 }

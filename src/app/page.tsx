@@ -1,5 +1,6 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
-import { Eyebrow, ResponseToggle, StatusLabel } from "@/components/ui";
+import { PageHeader } from "@/components/PageHeader";
+import { Card, Eyebrow, ResponseToggle, StatusLabel } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
 import { getCalendarEvents, getDashboardData } from "@/lib/queries";
@@ -15,54 +16,91 @@ export default async function Home() {
     );
   }
 
-  const [{ nextMatch }, events] = await Promise.all([
+  const [{ nextTraining, nextMatch }, events] = await Promise.all([
     getDashboardData(user.id, team.id),
     getCalendarEvents(user.id, team.id, 7),
   ]);
 
-  const week = events.filter((e) => e.item.id !== nextMatch?.id).slice(0, 3);
-  const matchGoing = nextMatch?.registrations[0]?.status !== "NOT_GOING";
+  const featuredEvents = [
+    nextTraining && { kind: "training" as const, item: nextTraining },
+    nextMatch && { kind: "match" as const, item: nextMatch },
+  ]
+    .filter((event): event is NonNullable<typeof event> => event !== null)
+    .sort((a, b) => a.item.startsAt.getTime() - b.item.startsAt.getTime());
+
+  const featuredKeys = new Set(featuredEvents.map((event) => `${event.kind}:${event.item.id}`));
+  const week = events
+    .filter((event) => !featuredKeys.has(`${event.kind}:${event.item.id}`))
+    .slice(0, 3);
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden">
-      <div className="relative z-[1] flex flex-1 flex-col gap-3.5 px-5 pt-3.5">
-        <div className="flex items-center justify-between">
-          <span className="text-lg font-bold uppercase tracking-[0.1em] text-ink">
-            {team.name}
-          </span>
-          <span className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
-            {team.season}
-          </span>
-        </div>
+    <div>
+      <PageHeader title="Hem" />
 
-        {nextMatch && (
-          <div className="flex flex-col items-center pt-[30px] text-center">
-            <Eyebrow tone="heading">Nästa match</Eyebrow>
-            <h2 className="mt-2 text-[27px] font-bold leading-tight tracking-[-0.01em] text-ink">
-              {nextMatch.isHome ? "Hemma" : "Borta"} vs {nextMatch.opponent}
-            </h2>
-            <div className="mt-4 h-0.5 w-[46px] bg-ink" />
-            <p className="mt-4 text-[15px] font-semibold text-ink-muted">
-              {formatDateHeader(nextMatch.startsAt)} · {formatTime(nextMatch.startsAt)}
-            </p>
-            <p className="mt-1 text-[13.5px] text-ink-subtle">{nextMatch.location}</p>
+      <main className="space-y-4 px-5 pb-8">
+        <header>
+          <h2 className="text-[28px] font-bold leading-tight tracking-tight text-ink">
+            Hej, {user.name}
+          </h2>
+          <p className="mt-1 text-sm text-ink-subtle">
+            {team.name} · {team.season}
+          </p>
+        </header>
 
-            <div className="mt-4">
-              <ResponseToggle
-                formAction={respondToMatch}
-                idField="matchId"
-                idValue={nextMatch.id}
-                going={matchGoing}
-              />
-            </div>
-          </div>
-        )}
+        {featuredEvents.map(({ kind, item }) => {
+          const isTraining = kind === "training";
+          const going = item.registrations[0]?.status === "GOING";
+          const respond = isTraining ? respondToTraining : respondToMatch;
+          const idField = isTraining ? "trainingId" : "matchId";
+          const title = isTraining
+            ? "Träning"
+            : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
 
-        <div className="mt-auto bg-white/[0.88] pb-4 pt-3">
+          return (
+            <Card key={`${kind}:${item.id}`} className="overflow-hidden p-4">
+              <div className="flex items-center justify-between gap-3">
+                <Eyebrow tone="heading">{isTraining ? "Nästa träning" : "Nästa match"}</Eyebrow>
+                <span className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
+                  {team.name}
+                </span>
+              </div>
+
+              <div className="mt-4 flex gap-4">
+                <div className="flex w-[72px] shrink-0 flex-col items-center justify-center rounded-xl border border-divider bg-white/80 px-2 py-3 text-center">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-subtle">
+                    {formatDateHeader(item.startsAt).slice(0, 3)}
+                  </span>
+                  <span className="text-[34px] font-bold leading-none text-ink">
+                    {item.startsAt.getDate()}
+                  </span>
+                </div>
+
+                <div className="min-w-0 flex-1 self-center">
+                  <h3 className="text-lg font-bold text-ink">{title}</h3>
+                  <p className="mt-2 text-sm font-semibold text-ink-muted">
+                    {formatDateHeader(item.startsAt)} · {formatTime(item.startsAt)}
+                  </p>
+                  <p className="mt-1 text-sm text-ink-subtle">{item.location}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-center border-t border-divider pt-4">
+                <ResponseToggle
+                  formAction={respond}
+                  idField={idField}
+                  idValue={item.id}
+                  going={going}
+                />
+              </div>
+            </Card>
+          );
+        })}
+
+        <Card className="p-4">
           <Eyebrow>Veckan</Eyebrow>
-          <div className="mt-2.5">
+          <div className="mt-2">
             {week.length === 0 && (
-              <p className="border-t-2 border-divider py-3 text-[13.5px] text-ink-subtle">
+              <p className="border-t border-divider py-3 text-[13.5px] text-ink-subtle">
                 Inga fler pass denna vecka.
               </p>
             )}
@@ -77,12 +115,11 @@ export default async function Home() {
 
               return (
                 <div
-                  key={item.id}
-                  className="flex items-center gap-3.5 border-t-2 border-divider py-3"
+                  key={`${kind}:${item.id}`}
+                  className="flex items-center gap-3.5 border-t border-divider py-3"
                 >
                   <span className="w-[46px] shrink-0 text-[13px] font-bold text-ink">
-                    {formatDateHeader(item.startsAt).slice(0, 3).toUpperCase()}{" "}
-                    {item.startsAt.getDate()}
+                    {formatDateHeader(item.startsAt).slice(0, 3).toUpperCase()} {item.startsAt.getDate()}
                   </span>
                   <span className="flex-1 text-[15px] font-semibold text-ink">
                     {title} {formatTime(item.startsAt)}
@@ -102,8 +139,8 @@ export default async function Home() {
               );
             })}
           </div>
-        </div>
-      </div>
+        </Card>
+      </main>
     </div>
   );
 }

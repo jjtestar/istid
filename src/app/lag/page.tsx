@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
-import { Eyebrow, StatusLabel } from "@/components/ui";
+import { Card, Eyebrow, StatusLabel } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { getRosterWithNextMatch } from "@/lib/queries";
 
@@ -22,31 +22,41 @@ export default async function LagPage() {
     <div>
       <PageHeader title="Lag" />
 
-      <div className="px-5 pb-8">
-        <div className="flex items-center justify-between border-t-2 border-divider pt-4">
-          <Eyebrow>
-            {team.name} · {team.season}
-          </Eyebrow>
-          {nextMatch && (
-            <span className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
-              {respondedGoing}/{roster.length} svarat
-            </span>
-          )}
-        </div>
+      <main className="space-y-4 px-5 pb-8">
+        <Card className="p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <Eyebrow>{team.season}</Eyebrow>
+              <h2 className="mt-1 text-xl font-bold text-ink">{team.name}</h2>
+            </div>
+            {nextMatch && (
+              <div className="text-right">
+                <div className="text-2xl font-bold text-ink">{respondedGoing}/{roster.length}</div>
+                <div className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
+                  svarat
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
 
-        <div className="mt-2">
-          {roster.map((member) => {
+        <Card className="overflow-hidden">
+          {roster.map((member, index) => {
             const status = statusByUser.get(member.userId);
             return (
               <div
                 key={member.id}
-                className="flex items-center gap-3.5 border-t-2 border-divider py-3"
+                className={`flex items-center gap-3.5 px-4 py-3.5 ${
+                  index === 0 ? "" : "border-t border-divider"
+                }`}
               >
-                <span className="w-[46px] shrink-0 text-[13px] font-bold text-ink">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-bold text-white">
                   {member.jerseyNo ?? "–"}
                 </span>
-                <div className="flex-1">
-                  <div className="text-[15px] font-semibold text-ink">{member.user.name}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[15px] font-semibold text-ink">
+                    {member.user.name}
+                  </div>
                   {member.position && (
                     <div className="text-[13px] text-ink-subtle">{member.position}</div>
                   )}
@@ -62,8 +72,8 @@ export default async function LagPage() {
               </div>
             );
           })}
-        </div>
-      </div>
+        </Card>
+      </main>
     </div>
   );
 }
