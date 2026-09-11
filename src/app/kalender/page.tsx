@@ -1,6 +1,6 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
-import { Badge, Card, DarkCard, Eyebrow } from "@/components/ui";
+import { Eyebrow, StatusLabel } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { endTime, formatDateHeader, formatMonthYear, formatTime } from "@/lib/format";
 import { getCalendarEvents } from "@/lib/queries";
@@ -24,7 +24,7 @@ export default async function KalenderPage() {
 
   if (!team) {
     return (
-      <div className="px-5 py-10 text-center text-muted">
+      <div className="px-5 py-10 text-center text-ink-subtle">
         Inget lag hittades. Kör <code>npm run db:seed</code> för att skapa exempeldata.
       </div>
     );
@@ -50,22 +50,20 @@ export default async function KalenderPage() {
     <div>
       <PageHeader title="Kalender" />
 
-      <div className="space-y-6 px-5 pb-8">
-        <Card>
-          <div className="mb-4 flex items-center justify-between text-sm font-bold uppercase tracking-wide">
-            <span>{formatMonthYear(today)}</span>
-          </div>
-          <div className="grid grid-cols-7 gap-1 text-center">
+      <div className="px-5 pb-8">
+        <div className="border-t-2 border-divider pt-4">
+          <Eyebrow>{formatMonthYear(today)}</Eyebrow>
+          <div className="mt-3 grid grid-cols-7 gap-1 text-center">
             {weekDates.map((d, i) => {
               const isToday = dayKey(d) === dayKey(today);
               return (
                 <div key={i} className="flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-semibold text-muted">
+                  <span className="text-[10px] font-semibold text-ink-subtle">
                     {WEEKDAY_LABELS[i]}
                   </span>
                   <span
                     className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
-                      isToday ? "bg-accent text-accent-foreground" : "text-ink"
+                      isToday ? "bg-ink text-white" : "text-ink"
                     }`}
                   >
                     {d.getDate()}
@@ -74,72 +72,54 @@ export default async function KalenderPage() {
               );
             })}
           </div>
-        </Card>
+        </div>
 
         {groups.size === 0 && (
-          <p className="text-center text-sm text-muted">Inga kommande händelser just nu.</p>
+          <p className="mt-6 text-center text-sm text-ink-subtle">
+            Inga kommande händelser just nu.
+          </p>
         )}
 
         {Array.from(groups.values()).map(({ date, events: dayEvents }) => (
-          <div key={dayKey(date)}>
-            <Eyebrow>{formatDateHeader(date).toUpperCase()}</Eyebrow>
-            <div className="mt-2 space-y-3">
+          <div key={dayKey(date)} className="mt-6">
+            <Eyebrow>{formatDateHeader(date)}</Eyebrow>
+            <div className="mt-2">
               {dayEvents.map(({ kind, item }) => {
-                const registered = item.registrations.length > 0;
-
-                if (kind === "training") {
-                  return (
-                    <Card key={item.id} className="border-l-4 border-l-accent">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-bold">Träning</h3>
-                          <p className="mt-1 text-sm text-muted">
-                            {formatTime(item.startsAt)} – {formatTime(endTime(item.startsAt))}
-                          </p>
-                          <p className="text-sm text-muted">{item.location}</p>
-                        </div>
-                        {registered ? (
-                          <Badge tone="success">Anmäld</Badge>
-                        ) : (
-                          <form action={respondToTraining}>
-                            <input type="hidden" name="trainingId" value={item.id} />
-                            <input type="hidden" name="status" value="GOING" />
-                            <button type="submit">
-                              <Badge tone="outline">Svara</Badge>
-                            </button>
-                          </form>
-                        )}
-                      </div>
-                    </Card>
-                  );
-                }
+                const going = item.registrations[0]?.status === "GOING";
+                const title =
+                  kind === "training"
+                    ? "Träning"
+                    : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
+                const time =
+                  kind === "training"
+                    ? `${formatTime(item.startsAt)} – ${formatTime(endTime(item.startsAt))}`
+                    : `${formatTime(item.startsAt)} – ${formatTime(endTime(item.startsAt, 120))}`;
+                const respond = kind === "training" ? respondToTraining : respondToMatch;
+                const idField = kind === "training" ? "trainingId" : "matchId";
 
                 return (
-                  <DarkCard key={item.id}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-bold">Match</h3>
-                        <p className="mt-0.5 text-white/70">
-                          {item.isHome ? "Hemma" : "Borta"} vs {item.opponent}
-                        </p>
-                        <p className="mt-1 text-sm text-white/50">
-                          {formatTime(item.startsAt)} – {formatTime(endTime(item.startsAt, 120))}
-                        </p>
-                        <p className="text-sm text-white/50">{item.location}</p>
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3.5 border-t-2 border-divider py-3"
+                  >
+                    <div className="flex-1">
+                      <div className="text-[15px] font-semibold text-ink">{title}</div>
+                      <div className="mt-0.5 text-[13px] text-ink-subtle">
+                        {time} · {item.location}
                       </div>
-                      {registered ? (
-                        <Badge tone="success">Anmäld</Badge>
-                      ) : (
-                        <form action={respondToMatch}>
-                          <input type="hidden" name="matchId" value={item.id} />
-                          <input type="hidden" name="status" value="GOING" />
-                          <button type="submit">
-                            <Badge tone="accent">Tillgänglig</Badge>
-                          </button>
-                        </form>
-                      )}
                     </div>
-                  </DarkCard>
+                    {going ? (
+                      <StatusLabel tone="success">Anmäld</StatusLabel>
+                    ) : (
+                      <form action={respond}>
+                        <input type="hidden" name={idField} value={item.id} />
+                        <input type="hidden" name="status" value="GOING" />
+                        <button type="submit">
+                          <StatusLabel tone="signal">Svara</StatusLabel>
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 );
               })}
             </div>

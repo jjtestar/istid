@@ -1,77 +1,84 @@
 import { ReactNode } from "react";
 
-export function Eyebrow({ children, tone = "muted" }: { children: ReactNode; tone?: "muted" | "accent" | "light" }) {
-  const toneClass =
-    tone === "accent" ? "text-accent" : tone === "light" ? "text-white/60" : "text-muted";
-  return (
-    <span className={`text-xs font-semibold uppercase tracking-widest ${toneClass}`}>
-      {children}
-    </span>
-  );
-}
-
-export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-2xl border border-border bg-surface p-5 ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-export function DarkCard({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-2xl bg-ink p-5 text-white ${className}`}>{children}</div>
-  );
-}
-
-export function Badge({
+export function Eyebrow({
   children,
-  tone = "outline",
+  tone = "label",
 }: {
   children: ReactNode;
-  tone?: "success" | "outline" | "accent" | "outline-light";
+  tone?: "label" | "heading";
 }) {
-  const toneClass = {
-    success: "bg-success-bg text-success",
-    outline: "border border-border text-ink",
-    accent: "bg-accent text-accent-foreground",
-    "outline-light": "border border-white/25 text-white",
-  }[tone];
-
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${toneClass}`}
+      className={`text-[11.5px] font-bold uppercase ${
+        tone === "heading" ? "tracking-[0.2em] text-signal" : "tracking-[0.18em] text-ink-subtle"
+      }`}
     >
       {children}
     </span>
   );
 }
 
-export function StatTile({ value, label, emphasis = false }: { value: string | number; label: string; emphasis?: boolean }) {
+export function StatusLabel({
+  children,
+  tone,
+}: {
+  children: ReactNode;
+  tone: "success" | "signal" | "muted";
+}) {
+  const toneClass =
+    tone === "success" ? "text-success" : tone === "signal" ? "text-signal" : "text-ink-subtle";
   return (
-    <div className="rounded-2xl bg-ink px-4 py-5 text-center">
-      <div className={`text-3xl font-bold ${emphasis ? "text-accent" : "text-white"}`}>{value}</div>
-      <div className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-white/50">
-        {label}
-      </div>
+    <span className={`text-xs font-bold uppercase tracking-[0.06em] ${toneClass}`}>
+      {children}
+    </span>
+  );
+}
+
+export function ResponseToggle({
+  formAction,
+  idField,
+  idValue,
+  going,
+  goingLabel = "JAG SPELAR",
+  notGoingLabel = "NEJ",
+}: {
+  formAction: (formData: FormData) => void;
+  idField: string;
+  idValue: string;
+  going: boolean;
+  goingLabel?: string;
+  notGoingLabel?: string;
+}) {
+  return (
+    <div className="inline-flex h-11 overflow-hidden rounded-full border-2 border-ink">
+      <form action={formAction} className="contents">
+        <input type="hidden" name={idField} value={idValue} />
+        <input type="hidden" name="status" value="GOING" />
+        <button
+          type="submit"
+          className={`flex h-full items-center px-[22px] text-sm font-bold uppercase tracking-wide ${
+            going ? "bg-ink text-white" : "bg-transparent text-ink"
+          }`}
+        >
+          {goingLabel}
+        </button>
+      </form>
+      <form action={formAction} className="contents">
+        <input type="hidden" name={idField} value={idValue} />
+        <input type="hidden" name="status" value="NOT_GOING" />
+        <button
+          type="submit"
+          className={`flex h-full items-center px-[22px] text-sm font-bold uppercase tracking-wide ${
+            !going ? "bg-ink text-white" : "bg-transparent text-ink"
+          }`}
+        >
+          {notGoingLabel}
+        </button>
+      </form>
     </div>
   );
 }
 
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-xl bg-black/5 ${className}`} />;
-}
-
-export function PrimaryButton({
-  children,
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      {...props}
-      className="flex h-12 w-full items-center justify-center rounded-xl bg-accent text-sm font-bold uppercase tracking-wide text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-    >
-      {children}
-    </button>
-  );
+  return <div className={`animate-pulse rounded bg-divider ${className}`} />;
 }

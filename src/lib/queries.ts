@@ -82,3 +82,21 @@ export async function getTeamRoster(teamId: string) {
     orderBy: { jerseyNo: "asc" },
   });
 }
+
+export async function getRosterWithNextMatch(teamId: string) {
+  const now = new Date();
+
+  const [roster, nextMatch] = await Promise.all([
+    getTeamRoster(teamId),
+    prisma.match.findFirst({
+      where: { teamId, startsAt: { gte: now } },
+      orderBy: { startsAt: "asc" },
+      include: { registrations: true },
+    }),
+  ]);
+
+  const statusByUser = new Map(nextMatch?.registrations.map((r) => [r.userId, r.status]) ?? []);
+  const respondedGoing = nextMatch?.registrations.filter((r) => r.status === "GOING").length ?? 0;
+
+  return { roster, nextMatch, statusByUser, respondedGoing };
+}

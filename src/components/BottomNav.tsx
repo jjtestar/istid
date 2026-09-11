@@ -15,19 +15,19 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 z-10 border-t border-border bg-surface/95 backdrop-blur">
-      <div className="mx-auto flex max-w-3xl">
+    <nav className="sticky bottom-0 z-10 border-t-[3px] border-ink bg-surface">
+      <div className="mx-auto flex w-full max-w-md">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-1 flex-col items-center gap-1 py-3 text-[11px] font-semibold ${
-                active ? "text-accent" : "text-muted"
+              className={`flex flex-1 flex-col items-center gap-1 px-[10px] pb-6 pt-3 text-[11.5px] font-semibold uppercase tracking-[0.08em] ${
+                active ? "text-ink" : "text-ink-subtle"
               }`}
             >
-              <Icon />
+              <Icon className="h-5 w-5" />
               {label}
             </Link>
           );
