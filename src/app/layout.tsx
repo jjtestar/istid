@@ -18,7 +18,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="sv" className={`${barlow.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-surface text-ink">
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col">{children}</div>
+        <div className="app-background" aria-hidden="true" />
+        <div className="relative z-[1] mx-auto flex w-full max-w-md flex-1 flex-col">
+          {children}
+        </div>
         <BottomNav />
       </body>
     </html>

@@ -1,5 +1,4 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
-import { Rink } from "@/components/Rink";
 import { Eyebrow, ResponseToggle, StatusLabel } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
@@ -26,8 +25,6 @@ export default async function Home() {
 
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden">
-      <Rink />
-
       <div className="relative z-[1] flex flex-1 flex-col gap-3.5 px-5 pt-3.5">
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold uppercase tracking-[0.1em] text-ink">

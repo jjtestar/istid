@@ -37,3 +37,19 @@ body {
   background: var(--color-surface);
   color: var(--color-ink);
 }
+
+.app-background {
+  position: fixed;
+  inset-block: 0;
+  left: 50%;
+  z-index: 0;
+  width: min(100%, 28rem);
+  transform: translateX(-50%);
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 38%), rgb(255 255 255 / 38%)),
+    url("/rink-background.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
