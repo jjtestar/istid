@@ -19,7 +19,7 @@ export default async function LagPage() {
 
   return (
     <div>
-      <PageHeader title="Lag" />
+      <PageHeader title="Laget" />
       <main className="space-y-4 px-5 pb-8">
         <ContextSwitcher
           teams={context.teams}

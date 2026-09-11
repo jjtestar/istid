@@ -15,7 +15,7 @@ const tabs = [
   { href: "/", label: "Hem", icon: HomeIcon },
   { href: "/anmalan", label: "Anmälan", icon: CheckIcon },
   { href: "/kalender", label: "Kalender", icon: CalendarIcon },
-  { href: "/lag", label: "Lag", icon: UsersIcon },
+  { href: "/lag", label: "Laget", icon: UsersIcon },
   { href: "/statistik", label: "Statistik", icon: ChartIcon },
   { href: "/min-profil", label: "Min profil", icon: ProfileIcon },
 ];
