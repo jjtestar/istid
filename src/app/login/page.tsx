@@ -13,12 +13,12 @@ export default async function LoginPage() {
         <div className="mb-7">
           <div className="mb-3 flex items-center gap-3">
             <span className="h-1.5 w-10 rounded-full bg-signal" aria-hidden="true" />
-            <Eyebrow tone="heading">Istid</Eyebrow>
+            <Eyebrow>Istid</Eyebrow>
           </div>
-          <h1 className="text-[32px] font-bold leading-tight tracking-tight text-ink">
+          <h1 className="page-title">
             Välkommen tillbaka
           </h1>
-          <p className="mt-2 text-base leading-6 text-ink-muted">
+          <p className="mt-2 body-copy text-ink-muted">
             Logga in för att komma till laget.
           </p>
         </div>

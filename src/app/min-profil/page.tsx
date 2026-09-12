@@ -10,7 +10,7 @@ export default async function MinProfilPage() {
   return (
     <div>
       <PageHeader title="Min profil" />
-      <main className="space-y-4 px-5 pb-8">
+      <main className="space-y-6 px-5 pb-10">
         <Card className="p-5">
           <Eyebrow>Personuppgifter</Eyebrow>
           <form action={updateProfile} className="mt-4 space-y-4">

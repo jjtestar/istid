@@ -31,7 +31,7 @@ export default async function AnmalanPage() {
   return (
     <div>
       <PageHeader title="Anmälan" />
-      <main className="space-y-4 px-5 pb-8">
+      <main className="space-y-6 px-5 pb-10">
         <ContextSwitcher
           teams={context.teams}
           seasons={context.seasons}
@@ -71,7 +71,7 @@ export default async function AnmalanPage() {
 
           return (
             <Card key={`${kind}:${item.id}`} className="overflow-hidden p-4">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <Eyebrow tone="heading">{isTraining ? "Nästa träning" : "Nästa match"}</Eyebrow>
                 <span className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
                   {team.name}
@@ -85,7 +85,7 @@ export default async function AnmalanPage() {
                   <span className="text-[34px] font-bold leading-none text-ink">{item.startsAt.getDate()}</span>
                 </div>
                 <div className="min-w-0 flex-1 self-center">
-                  <h2 className="text-lg font-bold text-ink">{title}</h2>
+                  <h2 className="section-title">{title}</h2>
                   <p className="mt-2 text-sm font-semibold text-ink-muted">
                     {formatDateHeader(item.startsAt)} · {formatTime(item.startsAt)}
                   </p>
@@ -127,7 +127,7 @@ export default async function AnmalanPage() {
                       <form action={respond}>
                         <input type="hidden" name={idField} value={item.id} />
                         <input type="hidden" name="status" value="GOING" />
-                        <button type="submit"><StatusLabel tone="signal">Svara</StatusLabel></button>
+                        <button type="submit" className="min-h-11 min-w-11 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"><StatusLabel tone="signal">Anmäl mig</StatusLabel></button>
                       </form>
                     )}
                   </div>

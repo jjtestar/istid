@@ -100,7 +100,7 @@ export function AttendanceControls({
 
   return (
     <div className="w-full">
-      <div className="grid min-h-11 grid-cols-3 overflow-hidden rounded-xl border-2 border-ink">
+      <div className="grid min-h-11 grid-cols-2 min-[400px]:grid-cols-3 overflow-hidden rounded-xl border-2 border-ink">
         <form action={formAction} className="contents" onSubmit={() => setShowReasons(false)}>
           <input type="hidden" name={idField} value={idValue} />
           <input type="hidden" name="status" value="GOING" />
@@ -122,7 +122,7 @@ export function AttendanceControls({
             setShowReasons((visible) => !visible);
             setShowLineup(false);
           }}
-          className={`min-h-11 border-r border-ink px-2 text-[13px] font-bold uppercase tracking-wide transition-colors ${
+          className={`min-h-11 min-[400px]:border-r border-ink px-2 text-[13px] font-bold uppercase tracking-wide transition-colors ${
             status === "NOT_GOING" ? "bg-ink text-white" : "bg-transparent text-ink"
           }`}
         >
@@ -137,7 +137,7 @@ export function AttendanceControls({
             setShowLineup((visible) => !visible);
             setShowReasons(false);
           }}
-          className={`min-h-11 px-2 text-[12px] font-bold uppercase tracking-[0.04em] transition-colors ${
+          className={`col-span-2 min-h-11 border-t border-ink min-[400px]:col-span-1 min-[400px]:border-t-0 px-2 text-[12px] font-bold uppercase tracking-[0.04em] transition-colors ${
             showLineup ? "bg-ink text-white" : "bg-transparent text-ink"
           }`}
         >
@@ -158,7 +158,7 @@ export function AttendanceControls({
                   type="submit"
                   name="absenceReason"
                   value={reason.value}
-                  className={`rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                  className={`min-h-11 rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors ${
                     absenceReason === reason.value
                       ? "border-ink bg-ink text-white"
                       : "border-divider bg-white text-ink hover:border-ink"
@@ -189,7 +189,7 @@ export function AttendanceControls({
             >
               <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-divider bg-white pb-4">
                 <div>
-                  <h3 id={lineupTitleId} className="text-xl font-bold text-ink">Laguppställning</h3>
+                  <h3 id={lineupTitleId} className="section-title">Laguppställning</h3>
                   <p className="mt-0.5 text-sm text-ink-subtle">{lineup.length} spelare</p>
                 </div>
                 <button
@@ -197,7 +197,7 @@ export function AttendanceControls({
                   type="button"
                   aria-label="Stäng laguppställning"
                   onClick={() => setShowLineup(false)}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-divider text-2xl leading-none text-ink transition-colors hover:bg-divider/50"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-divider text-2xl leading-none text-ink transition-colors hover:bg-divider/50"
                 >
                   ×
                 </button>

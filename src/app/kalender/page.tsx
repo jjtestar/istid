@@ -1,3 +1,4 @@
+import { ExpandableList } from "@/components/ExpandableList";
 import { respondToMatch, respondToTraining } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
 import { ContextSwitcher } from "@/components/ContextSwitcher";
@@ -52,7 +53,7 @@ export default async function KalenderPage() {
     <div>
       <PageHeader title="Kalender" />
 
-      <main className="space-y-5 px-5 pb-8">
+      <main className="space-y-7 px-5 pb-10">
         <ContextSwitcher
           teams={context.teams}
           seasons={context.seasons}
@@ -94,56 +95,58 @@ export default async function KalenderPage() {
           </Card>
         )}
 
-        {Array.from(groups.values()).map(({ date, events: dayEvents }) => (
-          <section key={dayKey(date)}>
-            <Eyebrow>{formatDateHeader(date)}</Eyebrow>
-            <div className="mt-2 space-y-2.5">
-              {dayEvents.map(({ kind, item }) => {
-                const going = item.registrations[0]?.status === "GOING";
-                const title =
-                  kind === "training"
-                    ? "Träning"
-                    : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
-                const time =
-                  kind === "training"
-                    ? `${formatTime(item.startsAt)} – ${formatTime(endTime(item.startsAt))}`
-                    : `${formatTime(item.startsAt)} – ${formatTime(endTime(item.startsAt, 120))}`;
-                const respond = kind === "training" ? respondToTraining : respondToMatch;
-                const idField = kind === "training" ? "trainingId" : "matchId";
+        <ExpandableList initialCount={3} moreLabel="Visa fler händelser" lessLabel="Visa färre händelser" className="space-y-7">
+          {Array.from(groups.values()).map(({ date, events: dayEvents }) => (
+            <section key={dayKey(date)}>
+              <Eyebrow>{formatDateHeader(date)}</Eyebrow>
+              <div className="mt-2 space-y-2.5">
+                {dayEvents.map(({ kind, item }) => {
+                  const going = item.registrations[0]?.status === "GOING";
+                  const title =
+                    kind === "training"
+                      ? "Träning"
+                      : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
+                  const time =
+                    kind === "training"
+                      ? `${formatTime(item.startsAt)} – ${formatTime(endTime(item.startsAt))}`
+                      : `${formatTime(item.startsAt)} – ${formatTime(endTime(item.startsAt, 120))}`;
+                  const respond = kind === "training" ? respondToTraining : respondToMatch;
+                  const idField = kind === "training" ? "trainingId" : "matchId";
 
-                return (
-                  <Card key={`${kind}:${item.id}`} className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-[58px] shrink-0 border-r border-divider pr-3">
-                        <div className="text-lg font-bold text-ink">{formatTime(item.startsAt)}</div>
-                        <div className="text-xs text-ink-subtle">
-                          {formatTime(endTime(item.startsAt, kind === "training" ? 90 : 120))}
+                  return (
+                    <Card key={`${kind}:${item.id}`} className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-[58px] shrink-0 border-r border-divider pr-3">
+                          <div className="text-lg font-bold text-ink">{formatTime(item.startsAt)}</div>
+                          <div className="text-xs text-ink-subtle">
+                            {formatTime(endTime(item.startsAt, kind === "training" ? 90 : 120))}
+                          </div>
                         </div>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[15px] font-bold text-ink">{title}</div>
-                        <div className="mt-0.5 truncate text-[13px] text-ink-subtle">
-                          {time} · {item.location}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[15px] font-bold text-ink">{title}</div>
+                          <div className="mt-0.5 truncate text-[13px] text-ink-subtle">
+                            {time} · {item.location}
+                          </div>
                         </div>
+                        {going ? (
+                          <StatusLabel tone="success">Anmäld</StatusLabel>
+                        ) : (
+                          <form action={respond}>
+                            <input type="hidden" name={idField} value={item.id} />
+                            <input type="hidden" name="status" value="GOING" />
+                            <button type="submit" className="min-h-11 min-w-11 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
+                              <StatusLabel tone="signal">Anmäl mig</StatusLabel>
+                            </button>
+                          </form>
+                        )}
                       </div>
-                      {going ? (
-                        <StatusLabel tone="success">Anmäld</StatusLabel>
-                      ) : (
-                        <form action={respond}>
-                          <input type="hidden" name={idField} value={item.id} />
-                          <input type="hidden" name="status" value="GOING" />
-                          <button type="submit">
-                            <StatusLabel tone="signal">Svara</StatusLabel>
-                          </button>
-                        </form>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+                    </Card>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </ExpandableList>
       </main>
     </div>
   );

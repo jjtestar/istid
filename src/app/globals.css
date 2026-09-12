@@ -38,6 +38,40 @@ body {
   color: var(--color-ink);
 }
 
+@layer components {
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+  }
+
+  .body-copy {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+}
+
+.expandable-list > summary::-webkit-details-marker {
+  display: none;
+}
+
+.expandable-list > summary .collapse-label,
+.expandable-list[open] > summary .expand-label {
+  display: none;
+}
+
+.expandable-list[open] > summary .collapse-label {
+  display: inline;
+}
+
 .app-background {
   position: fixed;
   inset-block: 0;
