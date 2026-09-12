@@ -82,7 +82,7 @@ export default async function StatistikPage({
   return (
     <div>
       <PageHeader title="Statistik" />
-      <main className="space-y-4 px-5 pb-8">
+      <main className="space-y-6 px-5 pb-10">
         <ContextSwitcher
           teams={context.teams}
           seasons={context.seasons}
@@ -92,7 +92,7 @@ export default async function StatistikPage({
 
         <nav
           aria-label="Statistikvy"
-          className="grid grid-cols-3 rounded-2xl border border-divider bg-white/90 p-1 shadow-sm"
+          className="grid grid-cols-3 rounded-2xl border border-divider bg-white/90 p-1"
         >
           {viewOptions.map((option) => {
             const active = view === option.value;
@@ -103,7 +103,7 @@ export default async function StatistikPage({
                 href={statisticsHref(option.value, selectedPlayer?.userId)}
                 aria-current={active ? "page" : undefined}
                 className={`flex min-h-11 items-center justify-center rounded-xl px-2 text-center text-[13px] font-bold transition-colors ${
-                  active ? "bg-ink text-white shadow-sm" : "text-ink-muted hover:bg-rink-crease"
+                  active ? "bg-ink text-white" : "text-ink-muted hover:bg-rink-crease"
                 }`}
               >
                 {option.label}
@@ -118,7 +118,7 @@ export default async function StatistikPage({
               <form method="get">
                 <input type="hidden" name="vy" value="spelare" />
                 <Eyebrow tone="heading">Välj spelare</Eyebrow>
-                <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                <div className="mt-3 grid grid-cols-1 min-[400px]:grid-cols-[minmax(0,1fr)_auto] gap-2">
                   <label className="min-w-0">
                     <span className="sr-only">Välj spelare</span>
                     <select
@@ -138,7 +138,7 @@ export default async function StatistikPage({
                     type="submit"
                     className="h-11 rounded-xl bg-ink px-4 text-sm font-bold text-white transition-opacity hover:opacity-90"
                   >
-                    Visa
+                    Visa statistik
                   </button>
                 </div>
               </form>
@@ -150,7 +150,7 @@ export default async function StatistikPage({
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <Eyebrow>{selectedPlayer.position ?? "Spelare"}</Eyebrow>
-                      <h2 className="mt-1 truncate text-xl font-bold text-ink">
+                      <h2 className="mt-1 truncate section-title">
                         <span className="mr-2 text-ink-subtle">#{selectedPlayer.jerseyNo ?? "–"}</span>
                         {selectedPlayer.name ?? "Okänd spelare"}
                       </h2>
@@ -291,7 +291,7 @@ export default async function StatistikPage({
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <Eyebrow>{team.season}</Eyebrow>
-                  <h2 className="mt-1 text-xl font-bold text-ink">{team.name}</h2>
+                  <h2 className="mt-1 section-title">{team.name}</h2>
                   <p className="mt-1 text-sm text-ink-subtle">
                     {stats.goalsFor}–{stats.goalsAgainst} i målskillnad
                   </p>

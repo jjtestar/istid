@@ -1,3 +1,4 @@
+import { ExpandableList } from "@/components/ExpandableList";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
@@ -24,15 +25,15 @@ export default async function Home() {
   return (
     <div>
       <PageHeader title="Hem" />
-      <main className="space-y-4 px-5 pb-8">
-        <header>
-          <h2 className="text-[28px] font-bold leading-tight tracking-tight text-ink">
+      <main className="space-y-6 px-5 pb-10">
+        <header className="mb-4">
+          <h2 className="section-title">
             Hej, {user.name}
           </h2>
         </header>
 
         <Card className="overflow-hidden p-5">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <Eyebrow tone="heading">Information</Eyebrow>
             <div className="shrink-0 text-right">
               <div className="text-xs font-semibold text-ink-subtle">Publicerad</div>
@@ -41,7 +42,7 @@ export default async function Home() {
               </time>
             </div>
           </div>
-          <p className="mt-4 text-base leading-6 text-ink-muted">
+          <p className="mt-4 body-copy text-ink-muted">
             Här visas viktig information från {team.name}.
           </p>
         </Card>
@@ -52,22 +53,24 @@ export default async function Home() {
             {highlights.length === 0 ? (
               <p className="text-sm text-ink-subtle">Inga highlights har lagts till än.</p>
             ) : null}
-            {highlights.map((highlight) => (
-              <div key={highlight.id} className="flex items-center gap-3 border-t border-divider py-3 first:border-t-0 first:pt-0">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signal text-sm text-white">▶</span>
-                <div className="min-w-0 flex-1">
-                  <a href={highlight.url} target="_blank" rel="noreferrer" className="block truncate text-[15px] font-bold text-ink underline decoration-divider underline-offset-4">
-                    {highlight.title}
-                  </a>
-                  <span className="text-[12px] text-ink-subtle">Länkat av {highlight.author.name ?? "spelare"}</span>
-                </div>
-              </div>
-            ))}
+            <ExpandableList initialCount={3} moreLabel="Visa fler highlights" lessLabel="Visa färre highlights">
+              {highlights.map((highlight) => (
+                <a key={highlight.id} href={highlight.url} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-3 rounded-lg border-t border-divider py-3 first:border-t-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signal text-sm text-white" aria-hidden="true">▶</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-bold text-ink underline decoration-divider underline-offset-4">
+                      {highlight.title}
+                    </span>
+                    <span className="text-[12px] text-ink-subtle">Länkat av {highlight.author.name ?? "spelare"}</span>
+                  </div>
+                </a>
+              ))}
+            </ExpandableList>
           </div>
         </Card>
 
         <Card className="p-5">
-          <Eyebrow>Senast spelat</Eyebrow>
+          <Eyebrow tone="heading">Senast spelat</Eyebrow>
           {latest ? (
             <div className="mt-3 flex items-center gap-4">
               <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-ink text-white">

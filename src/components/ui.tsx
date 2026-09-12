@@ -9,7 +9,7 @@ export function Card({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-divider bg-white/[0.92] shadow-[0_8px_24px_rgb(13_59_102_/_0.07)] backdrop-blur-[2px] ${className}`}
+      className={`rounded-2xl border border-divider bg-white/[0.92] backdrop-blur-[2px] ${className}`}
     >
       {children}
     </section>
@@ -23,13 +23,13 @@ export function Eyebrow({
   children: ReactNode;
   tone?: "label" | "heading";
 }) {
+  if (tone === "heading") {
+    return <h2 className="section-title text-signal">{children}</h2>;
+  }
+
   return (
     <span
-      className={`text-[11.5px] font-bold uppercase ${
-        tone === "heading"
-          ? "tracking-[0.2em] text-signal"
-          : "tracking-[0.18em] text-ink-subtle"
-      }`}
+      className="text-xs font-bold uppercase tracking-[0.12em] text-ink-subtle"
     >
       {children}
     </span>
