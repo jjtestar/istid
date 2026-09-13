@@ -9,6 +9,8 @@ const RSVP_STATUSES = new Set(["GOING", "NOT_GOING"]);
 const ABSENCE_REASONS = new Set(["TIRED", "SICK", "VACATION", "OTHER"]);
 const PLAYER_POSITIONS = new Set(["Forward", "Back", "Målvakt"]);
 const STICK_SIDES = new Set(["LEFT", "RIGHT"]);
+const PARTICIPATION_TYPES = new Set(["TRAINING_AND_MATCHES", "TRAINING_ONLY"]);
+const TRAINING_DAYS = new Set(["TUESDAY", "THURSDAY", "SATURDAY"]);
 
 function getResponse(formData: FormData) {
   const status = String(formData.get("status") ?? "");
@@ -131,10 +133,38 @@ export async function updateSeasonParticipation(formData: FormData) {
 
   if (!membership || (response !== "yes" && response !== "no")) return;
 
-  await prisma.teamMember.update({
-    where: { id: membership.id },
-    data: { playingThisSeason: response === "yes" },
-  });
+  if (response === "no") {
+    await prisma.teamMember.update({
+      where: { id: membership.id },
+      data: {
+        playingThisSeason: false,
+        participatesInMatches: false,
+        trainingDays: [],
+      },
+    });
+  } else {
+    const participationType = String(formData.get("participationType") ?? "");
+    const requestedTrainingDays = formData
+      .getAll("trainingDays")
+      .map(String)
+      .filter((day) => TRAINING_DAYS.has(day));
+    const trainingDays = [...new Set(requestedTrainingDays)] as (
+      | "TUESDAY"
+      | "THURSDAY"
+      | "SATURDAY"
+    )[];
+
+    if (!PARTICIPATION_TYPES.has(participationType) || trainingDays.length === 0) return;
+
+    await prisma.teamMember.update({
+      where: { id: membership.id },
+      data: {
+        playingThisSeason: true,
+        participatesInMatches: participationType === "TRAINING_AND_MATCHES",
+        trainingDays,
+      },
+    });
+  }
 
   revalidatePath("/");
   revalidatePath("/lag");

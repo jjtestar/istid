@@ -143,6 +143,8 @@ async function main() {
             jerseyNo,
             position,
             playingThisSeason: true,
+            participatesInMatches: true,
+            trainingDays: ["TUESDAY", "THURSDAY", "SATURDAY"],
           },
         });
       }

@@ -25,6 +25,12 @@ enum StickSide {
   RIGHT
 }
 
+enum TrainingDay {
+  TUESDAY
+  THURSDAY
+  SATURDAY
+}
+
 model User {
   id            String     @id @default(cuid())
   name          String?
@@ -58,12 +64,14 @@ model Team {
 }
 
 model TeamMember {
-  id                String   @id @default(cuid())
-  teamId            String
-  userId            String
-  jerseyNo          Int?
-  position          String?
-  playingThisSeason Boolean?
+  id                    String        @id @default(cuid())
+  teamId                String
+  userId                String
+  jerseyNo              Int?
+  position              String?
+  playingThisSeason     Boolean?
+  participatesInMatches Boolean?
+  trainingDays          TrainingDay[] @default([])
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

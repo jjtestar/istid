@@ -24,6 +24,8 @@ export async function GET() {
           jerseyNo: true,
           position: true,
           playingThisSeason: true,
+          participatesInMatches: true,
+          trainingDays: true,
           team: { select: { name: true, season: true } },
         },
       },

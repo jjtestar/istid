@@ -1,5 +1,6 @@
-import { updateProfile, updateSeasonParticipation } from "@/app/actions";
+import { updateProfile } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
+import { SeasonParticipationForm } from "@/components/SeasonParticipationForm";
 import { Card, Eyebrow } from "@/components/ui";
 import { signOut } from "@/lib/auth";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
@@ -121,36 +122,16 @@ export default async function MinProfilPage() {
         {team && membership ? (
           <Card className="p-5">
             <Eyebrow>Säsongen {team.season}</Eyebrow>
-            <h2 className="mt-1 section-title">Ska du spela den här säsongen?</h2>
-            <form action={updateSeasonParticipation} className="mt-4 space-y-4">
-              <div className="grid gap-2">
-                <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-divider bg-white px-4 py-3 text-base font-semibold text-ink has-[:checked]:border-ink has-[:checked]:bg-rink-crease">
-                  <input
-                    type="radio"
-                    name="playingThisSeason"
-                    value="yes"
-                    required
-                    defaultChecked={membership.playingThisSeason === true}
-                    className="h-5 w-5 accent-ink"
-                  />
-                  Ja, jag spelar
-                </label>
-                <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-divider bg-white px-4 py-3 text-base font-semibold text-ink has-[:checked]:border-signal has-[:checked]:bg-rink-line-red">
-                  <input
-                    type="radio"
-                    name="playingThisSeason"
-                    value="no"
-                    required
-                    defaultChecked={membership.playingThisSeason === false}
-                    className="h-5 w-5 accent-signal"
-                  />
-                  Nej, inte den här säsongen
-                </label>
-              </div>
-              <button type="submit" className="h-12 w-full rounded-xl bg-ink px-5 text-base font-bold text-white transition-opacity hover:opacity-90">
-                Spara säsongsval
-              </button>
-            </form>
+            <h2 className="mt-1 section-title">Hur deltar du den här säsongen?</h2>
+            <p className="mt-2 text-sm leading-6 text-ink-subtle">
+              Ange om du deltar i matcher och vilka fasta träningsdagar som fungerar.
+            </p>
+            <SeasonParticipationForm
+              key={membership.id}
+              initialPlaying={membership.playingThisSeason}
+              initialParticipatesInMatches={membership.participatesInMatches}
+              initialTrainingDays={membership.trainingDays}
+            />
           </Card>
         ) : null}
 

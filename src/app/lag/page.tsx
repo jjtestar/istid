@@ -6,6 +6,12 @@ import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { getTeamRoster } from "@/lib/queries";
 
+const trainingDayLabels = {
+  TUESDAY: "tisdag",
+  THURSDAY: "torsdag",
+  SATURDAY: "lördag",
+} as const;
+
 export default async function LagPage() {
   const { user, team, context } = await getCurrentUserWithTeam();
 
@@ -51,11 +57,18 @@ export default async function LagPage() {
                   {member.position ? <div className="text-[13px] text-ink-subtle">{member.position}</div> : null}
                   <div className="mt-0.5 text-[13px] text-ink-subtle">
                     {member.playingThisSeason === true
-                      ? "Spelar säsongen"
+                      ? member.participatesInMatches === false
+                        ? "Bara träningar"
+                        : "Träningar och matcher"
                       : member.playingThisSeason === false
                         ? "Spelar inte säsongen"
                         : "Har inte svarat om säsongen"}
                   </div>
+                  {member.playingThisSeason === true && member.trainingDays.length > 0 ? (
+                    <div className="text-[13px] text-ink-subtle">
+                      Tränar {member.trainingDays.map((day) => trainingDayLabels[day]).join(", ")}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}
