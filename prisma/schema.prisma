@@ -20,15 +20,23 @@ enum RsvpStatus {
   MAYBE
 }
 
+enum StickSide {
+  LEFT
+  RIGHT
+}
+
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String     @unique
   passwordHash  String?
-  role          Role      @default(PLAYER)
+  role          Role       @default(PLAYER)
+  heightCm      Int?
+  weightKg      Float?
+  stickSide     StickSide?
   emailVerified DateTime?
   image         String?
-  createdAt     DateTime  @default(now())
+  createdAt     DateTime   @default(now())
 
   teams                 TeamMember[]
   trainingRegistrations TrainingRegistration[]
@@ -50,11 +58,12 @@ model Team {
 }
 
 model TeamMember {
-  id       String  @id @default(cuid())
-  teamId   String
-  userId   String
-  jerseyNo Int?
-  position String?
+  id                String   @id @default(cuid())
+  teamId            String
+  userId            String
+  jerseyNo          Int?
+  position          String?
+  playingThisSeason Boolean?
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

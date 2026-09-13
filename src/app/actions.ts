@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 const RSVP_STATUSES = new Set(["GOING", "NOT_GOING"]);
 const ABSENCE_REASONS = new Set(["TIRED", "SICK", "VACATION", "OTHER"]);
 const PLAYER_POSITIONS = new Set(["Forward", "Back", "Målvakt"]);
+const STICK_SIDES = new Set(["LEFT", "RIGHT"]);
 
 function getResponse(formData: FormData) {
   const status = String(formData.get("status") ?? "");
@@ -78,7 +79,9 @@ export async function updateProfile(formData: FormData) {
   const { user, membership } = await getCurrentUserWithTeam();
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
   const jerseyValue = String(formData.get("jerseyNo") ?? "").trim();
-  const requestedPosition = String(formData.get("position") ?? "").trim();
+  const heightValue = String(formData.get("heightCm") ?? "").trim();
+  const weightValue = String(formData.get("weightKg") ?? "").trim();
+  const requestedStickSide = String(formData.get("stickSide") ?? "").trim();
 
   if (!name) return;
 
@@ -87,16 +90,72 @@ export async function updateProfile(formData: FormData) {
     parsedJerseyNo !== null && Number.isInteger(parsedJerseyNo) && parsedJerseyNo >= 0 && parsedJerseyNo <= 99
       ? parsedJerseyNo
       : null;
-  const position = PLAYER_POSITIONS.has(requestedPosition) ? requestedPosition : null;
+  const parsedHeightCm = heightValue === "" ? null : Number(heightValue);
+  const heightCm =
+    parsedHeightCm !== null && Number.isInteger(parsedHeightCm) && parsedHeightCm >= 80 && parsedHeightCm <= 230
+      ? parsedHeightCm
+      : parsedHeightCm === null
+        ? null
+        : undefined;
+  const parsedWeightKg = weightValue === "" ? null : Number(weightValue);
+  const weightKg =
+    parsedWeightKg !== null && Number.isFinite(parsedWeightKg) && parsedWeightKg >= 20 && parsedWeightKg <= 250
+      ? Math.round(parsedWeightKg * 10) / 10
+      : parsedWeightKg === null
+        ? null
+        : undefined;
+  const stickSide = STICK_SIDES.has(requestedStickSide)
+    ? (requestedStickSide as "LEFT" | "RIGHT")
+    : requestedStickSide === ""
+      ? null
+      : undefined;
+
+  if (heightCm === undefined || weightKg === undefined || stickSide === undefined) return;
 
   await prisma.$transaction([
-    prisma.user.update({ where: { id: user.id }, data: { name } }),
+    prisma.user.update({ where: { id: user.id }, data: { name, heightCm, weightKg, stickSide } }),
     ...(membership
-      ? [prisma.teamMember.update({ where: { id: membership.id }, data: { jerseyNo, position } })]
+      ? [prisma.teamMember.update({ where: { id: membership.id }, data: { jerseyNo } })]
       : []),
   ]);
 
   revalidatePath("/");
+  revalidatePath("/lag");
+  revalidatePath("/statistik");
+  revalidatePath("/min-profil");
+}
+
+export async function updateSeasonParticipation(formData: FormData) {
+  const { membership } = await getCurrentUserWithTeam();
+  const response = String(formData.get("playingThisSeason") ?? "");
+
+  if (!membership || (response !== "yes" && response !== "no")) return;
+
+  await prisma.teamMember.update({
+    where: { id: membership.id },
+    data: { playingThisSeason: response === "yes" },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/lag");
+  revalidatePath("/min-profil");
+}
+
+export async function updateMemberPosition(formData: FormData) {
+  const { user, team } = await getCurrentUserWithTeam();
+  const membershipId = String(formData.get("membershipId") ?? "");
+  const requestedPosition = String(formData.get("position") ?? "").trim();
+
+  if (user.role !== "ADMIN" || !team || !membershipId) return;
+  if (requestedPosition !== "" && !PLAYER_POSITIONS.has(requestedPosition)) return;
+
+  await prisma.teamMember.updateMany({
+    where: { id: membershipId, teamId: team.id },
+    data: { position: requestedPosition || null },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/anmalan");
   revalidatePath("/lag");
   revalidatePath("/statistik");
   revalidatePath("/min-profil");

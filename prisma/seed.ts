@@ -117,8 +117,8 @@ async function main() {
       const [id, name, email] = player;
       await prisma.user.upsert({
         where: { id },
-        update: { name, email, passwordHash, role: "PLAYER" },
-        create: { id, name, email, passwordHash, role: "PLAYER" },
+        update: { name, email, passwordHash, role: id === "user-johan" ? "ADMIN" : "PLAYER" },
+        create: { id, name, email, passwordHash, role: id === "user-johan" ? "ADMIN" : "PLAYER" },
       });
     }
 
@@ -142,6 +142,7 @@ async function main() {
             userId,
             jerseyNo,
             position,
+            playingThisSeason: true,
           },
         });
       }
