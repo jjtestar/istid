@@ -78,20 +78,33 @@ export async function respondToMatch(formData: FormData) {
 }
 
 export async function updateProfile(formData: FormData) {
-  const { user, membership } = await getCurrentUserWithTeam();
+  const { user } = await getCurrentUserWithTeam();
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
+
+  if (!name) return;
+
+  await prisma.user.update({ where: { id: user.id }, data: { name } });
+
+  revalidatePath("/");
+  revalidatePath("/lag");
+  revalidatePath("/statistik");
+  revalidatePath("/min-profil");
+}
+
+export async function updatePlayerDetails(formData: FormData) {
+  const { user, membership } = await getCurrentUserWithTeam();
   const jerseyValue = String(formData.get("jerseyNo") ?? "").trim();
   const heightValue = String(formData.get("heightCm") ?? "").trim();
   const weightValue = String(formData.get("weightKg") ?? "").trim();
   const requestedStickSide = String(formData.get("stickSide") ?? "").trim();
 
-  if (!name) return;
-
   const parsedJerseyNo = jerseyValue === "" ? null : Number(jerseyValue);
   const jerseyNo =
     parsedJerseyNo !== null && Number.isInteger(parsedJerseyNo) && parsedJerseyNo >= 0 && parsedJerseyNo <= 99
       ? parsedJerseyNo
-      : null;
+      : parsedJerseyNo === null
+        ? null
+        : undefined;
   const parsedHeightCm = heightValue === "" ? null : Number(heightValue);
   const heightCm =
     parsedHeightCm !== null && Number.isInteger(parsedHeightCm) && parsedHeightCm >= 80 && parsedHeightCm <= 230
@@ -112,10 +125,12 @@ export async function updateProfile(formData: FormData) {
       ? null
       : undefined;
 
-  if (heightCm === undefined || weightKg === undefined || stickSide === undefined) return;
+  if (jerseyNo === undefined || heightCm === undefined || weightKg === undefined || stickSide === undefined) {
+    return false;
+  }
 
   await prisma.$transaction([
-    prisma.user.update({ where: { id: user.id }, data: { name, heightCm, weightKg, stickSide } }),
+    prisma.user.update({ where: { id: user.id }, data: { heightCm, weightKg, stickSide } }),
     ...(membership
       ? [prisma.teamMember.update({ where: { id: membership.id }, data: { jerseyNo } })]
       : []),
@@ -125,6 +140,7 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/lag");
   revalidatePath("/statistik");
   revalidatePath("/min-profil");
+  return true;
 }
 
 export async function updateSeasonParticipation(formData: FormData) {

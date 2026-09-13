@@ -1,5 +1,6 @@
 import { updateProfile } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
+import { PlayerDetailsForm } from "@/components/PlayerDetailsForm";
 import { SeasonParticipationForm } from "@/components/SeasonParticipationForm";
 import { Card, Eyebrow } from "@/components/ui";
 import { signOut } from "@/lib/auth";
@@ -38,85 +39,25 @@ export default async function MinProfilPage() {
               <span className="mt-1.5 block text-[13px] text-ink-subtle">E-postadressen används för inloggning.</span>
             </label>
 
-            <div className="border-t border-divider pt-4">
-              <Eyebrow>Spelaruppgifter</Eyebrow>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                  <label className="block">
-                    <span className="mb-1.5 block text-sm font-bold text-ink">Längd</span>
-                    <div className="relative">
-                      <input
-                        name="heightCm"
-                        type="number"
-                        min={80}
-                        max={230}
-                        inputMode="numeric"
-                        defaultValue={user.heightCm ?? ""}
-                        className="h-12 w-full rounded-xl border border-divider bg-white px-3 pr-11 text-base text-ink outline-none focus:border-ink"
-                      />
-                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-subtle">cm</span>
-                    </div>
-                  </label>
-                  <label className="block">
-                    <span className="mb-1.5 block text-sm font-bold text-ink">Vikt</span>
-                    <div className="relative">
-                      <input
-                        name="weightKg"
-                        type="number"
-                        min={20}
-                        max={250}
-                        step="0.1"
-                        inputMode="decimal"
-                        defaultValue={user.weightKg ?? ""}
-                        className="h-12 w-full rounded-xl border border-divider bg-white px-3 pr-11 text-base text-ink outline-none focus:border-ink"
-                      />
-                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-subtle">kg</span>
-                    </div>
-                  </label>
-                  <label className="col-span-2 block">
-                    <span className="mb-1.5 block text-sm font-bold text-ink">Fattning</span>
-                    <select
-                      name="stickSide"
-                      defaultValue={user.stickSide ?? ""}
-                      className="h-12 w-full rounded-xl border border-divider bg-white px-3 text-base text-ink outline-none focus:border-ink"
-                    >
-                      <option value="">Välj fattning</option>
-                      <option value="LEFT">Vänster</option>
-                      <option value="RIGHT">Höger</option>
-                    </select>
-                  </label>
-              </div>
-
-              {team && membership ? (
-                <div className="mt-4 border-t border-divider pt-4">
-                  <Eyebrow>{team.name}</Eyebrow>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <label className="block">
-                      <span className="mb-1.5 block text-sm font-bold text-ink">Tröjnummer</span>
-                      <input
-                        name="jerseyNo"
-                        type="number"
-                        min={0}
-                        max={99}
-                        defaultValue={membership.jerseyNo ?? ""}
-                        className="h-12 w-full rounded-xl border border-divider bg-white px-3 text-base text-ink outline-none focus:border-ink"
-                      />
-                    </label>
-                    <div className="block">
-                      <span className="mb-1.5 block text-sm font-bold text-ink">Position</span>
-                      <div className="flex h-12 items-center rounded-xl border border-divider bg-divider/30 px-3 text-base text-ink">
-                        {membership.position ?? "Inte angiven"}
-                      </div>
-                      <span className="mt-1.5 block text-[13px] text-ink-subtle">Positionen anges av en admin.</span>
-                    </div>
-                  </div>
-                </div>
-                ) : null}
-            </div>
-
             <button type="submit" className="h-12 w-full rounded-xl bg-ink px-5 text-base font-bold text-white transition-opacity hover:opacity-90">
-              Spara profil
+              Spara namn
             </button>
           </form>
+        </Card>
+
+        <Card className="p-5">
+          <Eyebrow>Spelaruppgifter</Eyebrow>
+          <h2 className="mt-1 section-title">Din spelarprofil</h2>
+          {team ? <p className="mt-1 text-sm text-ink-subtle">{team.name}</p> : null}
+          <PlayerDetailsForm
+            key={membership?.id ?? user.id}
+            initialHeightCm={user.heightCm}
+            initialWeightKg={user.weightKg}
+            initialStickSide={user.stickSide}
+            initialJerseyNo={membership?.jerseyNo ?? null}
+            position={membership?.position ?? null}
+            hasTeam={Boolean(team && membership)}
+          />
         </Card>
 
         {team && membership ? (
