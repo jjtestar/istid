@@ -8,6 +8,12 @@ type TrainingDay = "TUESDAY" | "THURSDAY" | "SATURDAY";
 type Participation = "yes" | "no" | "";
 type ParticipationType = "TRAINING_AND_MATCHES" | "TRAINING_ONLY";
 
+type SavedSelection = {
+  participation: Exclude<Participation, "">;
+  participationType: ParticipationType;
+  selectedDays: TrainingDay[];
+};
+
 const trainingDays: { value: TrainingDay; label: string; detail: string }[] = [
   { value: "TUESDAY", label: "Tisdag", detail: "Fast träning" },
   { value: "THURSDAY", label: "Torsdag", detail: "Fast träning" },
@@ -37,15 +43,29 @@ export function SeasonParticipationForm({
   initialParticipatesInMatches: boolean | null;
   initialTrainingDays: TrainingDay[];
 }) {
+  const initialParticipation: Participation =
+    initialPlaying === true ? "yes" : initialPlaying === false ? "no" : "";
+  const initialParticipationType: ParticipationType =
+    initialParticipatesInMatches === false ? "TRAINING_ONLY" : "TRAINING_AND_MATCHES";
+  const defaultTrainingDays =
+    initialTrainingDays.length > 0 ? initialTrainingDays : trainingDays.map((day) => day.value);
   const [participation, setParticipation] = useState<Participation>(
-    initialPlaying === true ? "yes" : initialPlaying === false ? "no" : "",
+    initialParticipation,
   );
   const [participationType, setParticipationType] = useState<ParticipationType>(
-    initialParticipatesInMatches === false ? "TRAINING_ONLY" : "TRAINING_AND_MATCHES",
+    initialParticipationType,
   );
-  const [selectedDays, setSelectedDays] = useState<TrainingDay[]>(
-    initialTrainingDays.length > 0 ? initialTrainingDays : trainingDays.map((day) => day.value),
+  const [selectedDays, setSelectedDays] = useState<TrainingDay[]>(defaultTrainingDays);
+  const [savedSelection, setSavedSelection] = useState<SavedSelection | null>(() =>
+    initialParticipation === ""
+      ? null
+      : {
+          participation: initialParticipation,
+          participationType: initialParticipationType,
+          selectedDays: defaultTrainingDays,
+        },
   );
+  const [editing, setEditing] = useState(initialParticipation === "");
 
   function toggleDay(day: TrainingDay) {
     setSelectedDays((current) =>
@@ -55,12 +75,105 @@ export function SeasonParticipationForm({
 
   const missingTrainingDay = participation === "yes" && selectedDays.length === 0;
 
+  async function saveParticipation(formData: FormData) {
+    const saved = await updateSeasonParticipation(formData);
+    if (!saved || participation === "") return;
+
+    setSavedSelection({ participation, participationType, selectedDays });
+    setEditing(false);
+  }
+
+  function editSelection() {
+    if (savedSelection) {
+      setParticipation(savedSelection.participation);
+      setParticipationType(savedSelection.participationType);
+      setSelectedDays(savedSelection.selectedDays);
+    }
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    if (!savedSelection) return;
+    setParticipation(savedSelection.participation);
+    setParticipationType(savedSelection.participationType);
+    setSelectedDays(savedSelection.selectedDays);
+    setEditing(false);
+  }
+
+  if (!editing && savedSelection) {
+    const selectedTrainingDays = trainingDays.filter((day) =>
+      savedSelection.selectedDays.includes(day.value),
+    );
+
+    return (
+      <div className="mt-4" aria-live="polite">
+        <div className="rounded-xl border border-ink bg-rink-crease p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-[0.1em] text-ink-subtle">
+                Ditt val
+              </span>
+              <h3 className="mt-1 text-lg font-bold text-ink">
+                {savedSelection.participation === "yes" ? "Jag är med" : "Jag är inte med"}
+              </h3>
+            </div>
+            <span className="rounded-full bg-ink px-2.5 py-1 text-xs font-bold text-white">Sparat</span>
+          </div>
+
+          {savedSelection.participation === "yes" ? (
+            <dl className="mt-4 space-y-3 border-t border-divider pt-4 text-sm">
+              <div>
+                <dt className="font-bold text-ink">Deltagande</dt>
+                <dd className="text-ink-subtle">
+                  {savedSelection.participationType === "TRAINING_AND_MATCHES"
+                    ? "Träningar och matcher"
+                    : "Bara träningar"}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-bold text-ink">Träningsdagar</dt>
+                <dd className="mt-2 flex flex-wrap gap-2">
+                  {selectedTrainingDays.map((day) => (
+                    <span
+                      key={day.value}
+                      className="rounded-full border border-divider bg-white px-3 py-1 text-sm font-semibold text-ink"
+                    >
+                      {day.label}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="mt-3 text-sm text-ink-subtle">
+              Du är inte anmäld till träningar eller matcher den här säsongen.
+            </p>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={editSelection}
+          className="mt-3 h-12 w-full rounded-xl border border-ink bg-white px-5 text-base font-bold text-ink transition-colors hover:bg-rink-crease"
+        >
+          Ändra mitt val
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <form action={updateSeasonParticipation} className="mt-4 space-y-5">
+    <form action={saveParticipation} className="mt-4 space-y-5">
       <fieldset>
         <legend className="sr-only">Deltar du under säsongen?</legend>
         <div className="grid gap-2">
-          <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-divider bg-white px-4 py-3 text-base font-semibold text-ink has-[:checked]:border-ink has-[:checked]:bg-rink-crease">
+          <label
+            className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-base font-semibold text-ink ${
+              participation === "yes"
+                ? "border-ink bg-rink-crease"
+                : "border-divider bg-white"
+            }`}
+          >
             <input
               type="radio"
               name="playingThisSeason"
@@ -72,7 +185,13 @@ export function SeasonParticipationForm({
             />
             Jag är med
           </label>
-          <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-divider bg-white px-4 py-3 text-base font-semibold text-ink has-[:checked]:border-signal has-[:checked]:bg-rink-line-red">
+          <label
+            className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-base font-semibold text-ink ${
+              participation === "no"
+                ? "border-signal bg-rink-line-red"
+                : "border-divider bg-white"
+            }`}
+          >
             <input
               type="radio"
               name="playingThisSeason"
@@ -92,7 +211,13 @@ export function SeasonParticipationForm({
           <fieldset>
             <legend className="text-sm font-bold text-ink">Vad är du med på?</legend>
             <div className="mt-2 grid gap-2">
-              <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-divider bg-white px-4 py-3 text-sm font-semibold text-ink has-[:checked]:border-ink has-[:checked]:bg-rink-crease">
+              <label
+                className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold text-ink ${
+                  participationType === "TRAINING_AND_MATCHES"
+                    ? "border-ink bg-rink-crease"
+                    : "border-divider bg-white"
+                }`}
+              >
                 <input
                   type="radio"
                   name="participationType"
@@ -104,7 +229,13 @@ export function SeasonParticipationForm({
                 />
                 Träningar och matcher
               </label>
-              <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-divider bg-white px-4 py-3 text-sm font-semibold text-ink has-[:checked]:border-ink has-[:checked]:bg-rink-crease">
+              <label
+                className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold text-ink ${
+                  participationType === "TRAINING_ONLY"
+                    ? "border-ink bg-rink-crease"
+                    : "border-divider bg-white"
+                }`}
+              >
                 <input
                   type="radio"
                   name="participationType"
@@ -150,7 +281,18 @@ export function SeasonParticipationForm({
         </div>
       ) : null}
 
-      <SaveButton disabled={participation === "" || missingTrainingDay} />
+      <div className="grid gap-2">
+        <SaveButton disabled={participation === "" || missingTrainingDay} />
+        {savedSelection ? (
+          <button
+            type="button"
+            onClick={cancelEditing}
+            className="h-11 w-full rounded-xl px-5 text-sm font-bold text-ink-subtle transition-colors hover:bg-divider/40"
+          >
+            Avbryt
+          </button>
+        ) : null}
+      </div>
       <p className="text-center text-xs text-ink-subtle">Du kan ändra ditt val när som helst.</p>
     </form>
   );

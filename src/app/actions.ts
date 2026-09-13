@@ -131,7 +131,7 @@ export async function updateSeasonParticipation(formData: FormData) {
   const { membership } = await getCurrentUserWithTeam();
   const response = String(formData.get("playingThisSeason") ?? "");
 
-  if (!membership || (response !== "yes" && response !== "no")) return;
+  if (!membership || (response !== "yes" && response !== "no")) return false;
 
   if (response === "no") {
     await prisma.teamMember.update({
@@ -154,7 +154,7 @@ export async function updateSeasonParticipation(formData: FormData) {
       | "SATURDAY"
     )[];
 
-    if (!PARTICIPATION_TYPES.has(participationType) || trainingDays.length === 0) return;
+    if (!PARTICIPATION_TYPES.has(participationType) || trainingDays.length === 0) return false;
 
     await prisma.teamMember.update({
       where: { id: membership.id },
@@ -169,6 +169,7 @@ export async function updateSeasonParticipation(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/lag");
   revalidatePath("/min-profil");
+  return true;
 }
 
 export async function updateMemberPosition(formData: FormData) {
