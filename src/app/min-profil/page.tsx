@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow } from "@/components/ui";
 import { signOut } from "@/lib/auth";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
+import Link from "next/link";
 
 export default async function MinProfilPage() {
   const { user, team, membership } = await getCurrentUserWithTeam();
@@ -152,6 +153,21 @@ export default async function MinProfilPage() {
             </form>
           </Card>
         ) : null}
+
+        <Card className="p-5">
+          <Eyebrow>Integritet</Eyebrow>
+          <h2 className="mt-1 section-title">Dina uppgifter och rättigheter</h2>
+          <p className="mt-2 text-sm leading-6 text-ink-subtle">
+            Se hur Istid använder dina personuppgifter, hämta en kopia eller kontakta oss om
+            rättelse och radering.
+          </p>
+          <Link
+            href="/integritet"
+            className="mt-4 flex h-12 w-full items-center justify-center rounded-xl border border-ink bg-white px-5 text-base font-bold text-ink transition-colors hover:bg-rink-crease"
+          >
+            Integritet &amp; mina uppgifter
+          </Link>
+        </Card>
 
         <form
           action={async () => {
