@@ -77,20 +77,6 @@ export async function respondToMatch(formData: FormData) {
   revalidatePath("/kalender");
 }
 
-export async function updateProfile(formData: FormData) {
-  const { user } = await getCurrentUserWithTeam();
-  const name = String(formData.get("name") ?? "").trim().slice(0, 80);
-
-  if (!name) return;
-
-  await prisma.user.update({ where: { id: user.id }, data: { name } });
-
-  revalidatePath("/");
-  revalidatePath("/lag");
-  revalidatePath("/statistik");
-  revalidatePath("/min-profil");
-}
-
 export async function updatePlayerDetails(formData: FormData) {
   const { user, membership } = await getCurrentUserWithTeam();
   const jerseyValue = String(formData.get("jerseyNo") ?? "").trim();

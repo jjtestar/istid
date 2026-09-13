@@ -1,4 +1,3 @@
-import { updateProfile } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
 import { PlayerDetailsForm } from "@/components/PlayerDetailsForm";
 import { SeasonParticipationForm } from "@/components/SeasonParticipationForm";
@@ -15,34 +14,21 @@ export default async function MinProfilPage() {
       <PageHeader title="Min profil" />
       <main className="space-y-6 px-5 pb-10">
         <Card className="p-5">
-          <Eyebrow>Personuppgifter</Eyebrow>
-          <form action={updateProfile} className="mt-4 space-y-4">
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-bold text-ink">Namn</span>
-              <input
-                name="name"
-                type="text"
-                required
-                maxLength={80}
-                defaultValue={user.name ?? ""}
-                className="h-12 w-full rounded-xl border border-divider bg-white px-3 text-base text-ink outline-none focus:border-ink"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-bold text-ink">E-post</span>
-              <input
-                type="email"
-                value={user.email}
-                readOnly
-                className="h-12 w-full rounded-xl border border-divider bg-divider/30 px-3 text-base text-ink-subtle outline-none"
-              />
-              <span className="mt-1.5 block text-[13px] text-ink-subtle">E-postadressen används för inloggning.</span>
-            </label>
-
-            <button type="submit" className="h-12 w-full rounded-xl bg-ink px-5 text-base font-bold text-white transition-opacity hover:opacity-90">
-              Spara namn
-            </button>
-          </form>
+          <Eyebrow>Kontouppgifter</Eyebrow>
+          <h2 className="mt-1 section-title">Ditt konto</h2>
+          <dl className="mt-4 overflow-hidden rounded-xl border border-divider bg-divider/20">
+            <div className="px-4 py-3">
+              <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle">Namn</dt>
+              <dd className="mt-1 text-base font-semibold text-ink">{user.name ?? "Inte angivet"}</dd>
+            </div>
+            <div className="border-t border-divider px-4 py-3">
+              <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle">E-post</dt>
+              <dd className="mt-1 break-all text-base font-semibold text-ink">{user.email}</dd>
+            </div>
+          </dl>
+          <p className="mt-3 text-[13px] leading-5 text-ink-subtle">
+            Namn och e-post hanteras av en administratör och kan inte ändras här.
+          </p>
         </Card>
 
         <Card className="p-5">
