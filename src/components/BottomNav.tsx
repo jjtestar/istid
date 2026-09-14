@@ -25,7 +25,7 @@ export function BottomNav() {
   if (pathname === "/login") return null;
 
   return (
-    <nav className="sticky bottom-0 z-10 border-t-[3px] border-ink bg-surface" aria-label="Huvudmeny">
+    <nav className="app-bottom-nav sticky bottom-0 z-10 border-t-[3px] border-ink bg-surface" aria-label="Huvudmeny">
       <div className="mx-auto grid w-full max-w-md grid-cols-6">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);

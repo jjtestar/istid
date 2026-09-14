@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
+import { InstallAppButton } from "@/components/PwaProvider";
 import { PlayerDetailsForm } from "@/components/PlayerDetailsForm";
 import { SeasonParticipationForm } from "@/components/SeasonParticipationForm";
 import { Card, Eyebrow } from "@/components/ui";
@@ -11,7 +12,7 @@ export default async function MinProfilPage() {
 
   return (
     <div>
-      <PageHeader title="Min profil" />
+      <PageHeader title="Min profil" right={<InstallAppButton />} />
       <main className="space-y-6 px-5 pb-10">
         <Card className="p-5">
           <Eyebrow>Kontouppgifter</Eyebrow>

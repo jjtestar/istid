@@ -1,6 +1,7 @@
 import { ExpandableList } from "@/components/ExpandableList";
 import { GoalHighlights } from "@/components/GoalHighlights";
 import { PageHeader } from "@/components/PageHeader";
+import { InstallAppButton } from "@/components/PwaProvider";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
@@ -25,7 +26,7 @@ export default async function Home() {
 
   return (
     <div>
-      <PageHeader title="Hem" />
+      <PageHeader title="Hem" right={<InstallAppButton />} />
       <main className="space-y-6 px-5 pb-10">
         <header className="mb-4">
           <h2 className="section-title">
