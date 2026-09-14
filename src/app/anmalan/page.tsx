@@ -1,57 +1,52 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
 import { AttendanceControls } from "@/components/AttendanceControls";
-import { ContextSwitcher } from "@/components/ContextSwitcher";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow, StatusLabel } from "@/components/ui";
-import { getCurrentUserWithTeam } from "@/lib/current-user";
+import { DEFAULT_SEASON, getCurrentUser, getUserSeasonTeams } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
-import { getCalendarEvents, getDashboardData } from "@/lib/queries";
+import { getCalendarEventsForTeams, getUpcomingByTeam } from "@/lib/queries";
 
 export default async function AnmalanPage() {
-  const { user, team, context } = await getCurrentUserWithTeam();
+  const user = await getCurrentUser();
+  const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
+  const teams = await getUserSeasonTeams(user.id, isAdmin, DEFAULT_SEASON);
 
-  if (!team) {
+  if (teams.length === 0) {
     return <div className="px-5 py-10 text-center text-ink-subtle">Inget lag hittades.</div>;
   }
 
-  const [{ nextTraining, nextMatch, roster, currentUserId }, events] = await Promise.all([
-    getDashboardData(user.id, team.id),
-    getCalendarEvents(user.id, team.id, 7),
+  const teamIds = teams.map((team) => team.id);
+  const [byTeam, weekEvents] = await Promise.all([
+    getUpcomingByTeam(teams),
+    getCalendarEventsForTeams(user.id, teamIds, 7),
   ]);
 
-  const featuredEvents = [
-    nextTraining && { kind: "training" as const, item: nextTraining },
-    nextMatch && { kind: "match" as const, item: nextMatch },
-  ]
-    .filter((event): event is NonNullable<typeof event> => event !== null)
+  const featuredEvents = byTeam
+    .flatMap(({ team, nextTraining, nextMatch, roster }) => [
+      nextTraining && { kind: "training" as const, item: nextTraining, team, roster },
+      nextMatch && { kind: "match" as const, item: nextMatch, team, roster },
+    ])
+    .filter((event): event is NonNullable<typeof event> => Boolean(event))
     .sort((a, b) => a.item.startsAt.getTime() - b.item.startsAt.getTime());
   const featuredKeys = new Set(featuredEvents.map((event) => `${event.kind}:${event.item.id}`));
-  const week = events.filter((event) => !featuredKeys.has(`${event.kind}:${event.item.id}`)).slice(0, 3);
+  const week = weekEvents.filter((event) => !featuredKeys.has(`${event.kind}:${event.item.id}`)).slice(0, 3);
 
   return (
     <div>
       <PageHeader title="Anmälan" />
       <main className="space-y-6 px-5 pb-10">
-        <ContextSwitcher
-          teams={context.teams}
-          seasons={context.seasons}
-          selectedTeamSlug={context.selectedTeamSlug}
-          selectedSeason={context.selectedSeason}
-          showSeason={false}
-        />
-
         {featuredEvents.length === 0 ? (
           <Card className="p-5 text-center text-sm text-ink-subtle">
             Inga kommande träningar eller matcher att anmäla sig till.
           </Card>
         ) : null}
 
-        {featuredEvents.map(({ kind, item }) => {
+        {featuredEvents.map(({ kind, item, team, roster }) => {
           const isTraining = kind === "training";
           const registrationByUser = new Map(
             item.registrations.map((candidate) => [candidate.userId, candidate]),
           );
-          const registration = registrationByUser.get(currentUserId);
+          const registration = registrationByUser.get(user.id);
           const respond = isTraining ? respondToTraining : respondToMatch;
           const idField = isTraining ? "trainingId" : "matchId";
           const title = isTraining
@@ -120,7 +115,14 @@ export default async function AnmalanPage() {
                     <span className="w-[46px] shrink-0 text-[13px] font-bold text-ink">
                       {formatDateHeader(item.startsAt).slice(0, 3).toUpperCase()} {item.startsAt.getDate()}
                     </span>
-                    <span className="flex-1 text-[15px] font-semibold text-ink">{title} {formatTime(item.startsAt)}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[15px] font-semibold text-ink">
+                        {title} {formatTime(item.startsAt)}
+                      </span>
+                      {teams.length > 1 ? (
+                        <span className="block text-[12px] text-ink-subtle">{item.team.name}</span>
+                      ) : null}
+                    </span>
                     {going ? (
                       <StatusLabel tone="success">Anmäld</StatusLabel>
                     ) : (

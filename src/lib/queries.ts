@@ -50,6 +50,73 @@ export async function getCalendarEvents(userId: string, teamId: string, days = 2
   );
 }
 
+type TeamRef = { id: string; name: string };
+
+/**
+ * Next training/match per team, each tagged with which team it belongs to —
+ * used to build an aggregated "featured activities" list across every team
+ * a player is assigned to, instead of a single selected team.
+ */
+export async function getUpcomingByTeam(teams: TeamRef[]) {
+  const now = new Date();
+  return Promise.all(
+    teams.map(async (team) => {
+      const [nextTraining, nextMatch, roster] = await Promise.all([
+        prisma.training.findFirst({
+          where: { teamId: team.id, startsAt: { gte: now } },
+          orderBy: { startsAt: "asc" },
+          include: { registrations: true },
+        }),
+        prisma.match.findFirst({
+          where: { teamId: team.id, startsAt: { gte: now } },
+          orderBy: { startsAt: "asc" },
+          include: { registrations: true },
+        }),
+        prisma.teamMember.findMany({
+          where: { teamId: team.id },
+          include: { user: true },
+          orderBy: { jerseyNo: "asc" },
+        }),
+      ]);
+      return { team, nextTraining, nextMatch, roster };
+    }),
+  );
+}
+
+/** Same as getCalendarEvents but aggregated across several teams at once, each event tagged with its team. */
+export async function getCalendarEventsForTeams(
+  userId: string,
+  teamIds: string[],
+  days = 21,
+  historic = false,
+) {
+  const now = new Date();
+  const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+  const dateFilter = historic ? { lte: now } : { gte: now, lte: until };
+  const [trainings, matches] = await Promise.all([
+    prisma.training.findMany({
+      where: { teamId: { in: teamIds }, startsAt: dateFilter },
+      orderBy: { startsAt: historic ? "desc" : "asc" },
+      take: historic ? days : undefined,
+      include: { registrations: { where: { userId } }, team: { select: { id: true, name: true } } },
+    }),
+    prisma.match.findMany({
+      where: { teamId: { in: teamIds }, startsAt: dateFilter },
+      orderBy: { startsAt: historic ? "desc" : "asc" },
+      take: historic ? days : undefined,
+      include: { registrations: { where: { userId } }, team: { select: { id: true, name: true } } },
+    }),
+  ]);
+  return [
+    ...trainings.map((item) => ({ kind: "training" as const, item })),
+    ...matches.map((item) => ({ kind: "match" as const, item })),
+  ].sort((a, b) =>
+    historic
+      ? b.item.startsAt.getTime() - a.item.startsAt.getTime()
+      : a.item.startsAt.getTime() - b.item.startsAt.getTime(),
+  );
+}
+
 export async function getStats(userId: string, teamId: string) {
   const [matchStats, trainingRegistrations] = await Promise.all([
     prisma.matchStat.findMany({

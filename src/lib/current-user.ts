@@ -75,3 +75,30 @@ export async function getCurrentUserWithTeam() {
     },
   };
 }
+
+/**
+ * Every team a user is a member of for a given season (all teams for admins),
+ * driven entirely by the database — used for the multi-team aggregated views
+ * (Anmälan, Kalender) rather than the single cookie-selected team.
+ */
+export async function getUserSeasonTeams(userId: string, isAdmin: boolean, season: string) {
+  return prisma.team.findMany({
+    where: {
+      season,
+      ...(isAdmin ? {} : { members: { some: { userId } } }),
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
+/** Every season the user has ever belonged to a team in (all seasons for admins). */
+export async function getUserSeasons(userId: string, isAdmin: boolean) {
+  const teams = await prisma.team.findMany({
+    where: isAdmin ? {} : { members: { some: { userId } } },
+    select: { season: true },
+    distinct: ["season"],
+  });
+  return Array.from(new Set(teams.map((candidate) => candidate.season))).sort((a, b) =>
+    b.localeCompare(a, "sv-SE"),
+  );
+}

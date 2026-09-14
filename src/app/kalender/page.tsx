@@ -1,11 +1,11 @@
 import { ExpandableList } from "@/components/ExpandableList";
 import { respondToMatch, respondToTraining } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
-import { ContextSwitcher } from "@/components/ContextSwitcher";
+import { SeasonSwitcher } from "@/components/SeasonSwitcher";
 import { Card, Eyebrow, StatusLabel } from "@/components/ui";
-import { getCurrentUserWithTeam } from "@/lib/current-user";
+import { DEFAULT_SEASON, getCurrentUser, getUserSeasonTeams, getUserSeasons } from "@/lib/current-user";
 import { endTime, formatDateHeader, formatMonthYear, formatTime } from "@/lib/format";
-import { getCalendarEvents } from "@/lib/queries";
+import { getCalendarEventsForTeams } from "@/lib/queries";
 
 function dayKey(date: Date) {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -21,10 +21,23 @@ function startOfWeek(date: Date) {
 
 const WEEKDAY_LABELS = ["MÅN", "TIS", "ONS", "TOR", "FRE", "LÖR", "SÖN"];
 
-export default async function KalenderPage() {
-  const { user, team, context } = await getCurrentUserWithTeam();
+export default async function KalenderPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sasong?: string | string[] }>;
+}) {
+  const user = await getCurrentUser();
+  const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
+  const availableSeasons = await getUserSeasons(user.id, isAdmin);
 
-  if (!team) {
+  const params = await searchParams;
+  const requestedSeason = typeof params.sasong === "string" ? params.sasong : "";
+  const selectedSeason = availableSeasons.includes(requestedSeason) ? requestedSeason : DEFAULT_SEASON;
+  const isHistoric = selectedSeason !== DEFAULT_SEASON;
+
+  const teams = await getUserSeasonTeams(user.id, isAdmin, selectedSeason);
+
+  if (teams.length === 0) {
     return (
       <div className="px-5 py-10 text-center text-ink-subtle">
         Inget lag hittades. Kör <code>npm run db:seed</code> för att skapa exempeldata.
@@ -32,8 +45,9 @@ export default async function KalenderPage() {
     );
   }
 
-  const isHistoric = team.season !== "2026/27";
-  const events = await getCalendarEvents(user.id, team.id, 21, isHistoric);
+  const teamIds = teams.map((team) => team.id);
+  const events = await getCalendarEventsForTeams(user.id, teamIds, 21, isHistoric);
+  const showTeamLabel = teams.length > 1;
   const today = new Date();
   const weekStart = startOfWeek(today);
   const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -54,19 +68,15 @@ export default async function KalenderPage() {
       <PageHeader title="Kalender" />
 
       <main className="space-y-7 px-5 pb-10">
-        <ContextSwitcher
-          teams={context.teams}
-          seasons={context.seasons}
-          selectedTeamSlug={context.selectedTeamSlug}
-          selectedSeason={context.selectedSeason}
-          showSeason={false}
-        />
+        {availableSeasons.length > 1 ? (
+          <SeasonSwitcher seasons={availableSeasons} selectedSeason={selectedSeason} />
+        ) : null}
 
         <Card className="p-4">
           {isHistoric ? (
             <div className="text-center">
               <Eyebrow>Avslutad säsong</Eyebrow>
-              <div className="mt-1 text-lg font-bold text-ink">{team.season}</div>
+              <div className="mt-1 text-lg font-bold text-ink">{selectedSeason}</div>
               <div className="mt-1 text-sm text-ink-subtle">Senaste händelserna visas först</div>
             </div>
           ) : (
@@ -126,6 +136,7 @@ export default async function KalenderPage() {
                           <div className="text-[15px] font-bold text-ink">{title}</div>
                           <div className="mt-0.5 truncate text-[13px] text-ink-subtle">
                             {time} · {item.location}
+                            {showTeamLabel ? ` · ${item.team.name}` : ""}
                           </div>
                         </div>
                         {going ? (
