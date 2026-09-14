@@ -1,4 +1,5 @@
 import { ExpandableList } from "@/components/ExpandableList";
+import { GoalHighlights } from "@/components/GoalHighlights";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
@@ -49,10 +50,9 @@ export default async function Home() {
 
         <Card className="p-5">
           <Eyebrow tone="heading">Highlights</Eyebrow>
-          <div className="mt-3">
-            {highlights.length === 0 ? (
-              <p className="text-sm text-ink-subtle">Inga highlights har lagts till än.</p>
-            ) : null}
+          <GoalHighlights />
+          {highlights.length > 0 ? <div className="mt-5 border-t border-divider pt-4">
+            <h3 className="mb-1 text-base font-bold text-ink">Fler klipp</h3>
             <ExpandableList initialCount={3} moreLabel="Visa fler highlights" lessLabel="Visa färre highlights">
               {highlights.map((highlight) => (
                 <a key={highlight.id} href={highlight.url} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-3 rounded-lg border-t border-divider py-3 first:border-t-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
@@ -66,7 +66,7 @@ export default async function Home() {
                 </a>
               ))}
             </ExpandableList>
-          </div>
+          </div> : null}
         </Card>
 
         <Card className="p-5">
