@@ -12,6 +12,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
+    "check:bundle-size": "node scripts/check-function-bundle-size.mjs",
     "test:pwa": "node --require next/dist/server/node-environment --import tsx tests/pwa.mjs"
   },
   "prisma": {
