@@ -23,11 +23,16 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-};
+export async function generateViewport(): Promise<Viewport> {
+  const theme = await getThemePreference();
+
+  return {
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+    themeColor: theme === "mint" ? "#0D1416" : "#ffffff",
+  };
+}
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const theme = await getThemePreference();
