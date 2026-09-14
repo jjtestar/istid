@@ -39,7 +39,10 @@ export default async function AdminPage() {
           ))}
         </section>
         <section className="rounded-2xl border border-divider bg-white p-5">
-          <div className="flex items-center gap-2"><ClipboardIcon className="h-5 w-5" /><h2 className="section-title">Senaste adminaktivitet</h2></div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2"><ClipboardIcon className="h-5 w-5" /><h2 className="section-title">Senaste adminaktivitet</h2></div>
+            <Link href="/admin/logg" className="text-sm font-bold text-signal underline underline-offset-4">Visa allt</Link>
+          </div>
           {logs.length ? <div className="mt-4 divide-y divide-divider">{logs.map((log) => <div key={log.id} className="py-3 text-sm"><p className="font-bold">{log.action}</p><p className="text-ink-subtle">{log.actor.name ?? "Administratör"} · {new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" }).format(log.createdAt)}</p></div>)}</div> : <p className="mt-3 text-sm text-ink-subtle">Ingen aktivitet registrerad ännu.</p>}
         </section>
         {admin.isSuperAdmin ? <p className="text-center text-xs font-bold uppercase tracking-[0.1em] text-ink-subtle"><TrophyIcon className="mr-1 inline h-4 w-4" />Huvudadmin</p> : null}

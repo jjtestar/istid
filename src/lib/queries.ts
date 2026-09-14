@@ -65,12 +65,12 @@ export async function getUpcomingByTeam(teams: TeamRef[]) {
         prisma.training.findFirst({
           where: { teamId: team.id, startsAt: { gte: now } },
           orderBy: { startsAt: "asc" },
-          include: { registrations: true },
+          include: { registrations: true, lineupPlan: true },
         }),
         prisma.match.findFirst({
           where: { teamId: team.id, startsAt: { gte: now } },
           orderBy: { startsAt: "asc" },
-          include: { registrations: true },
+          include: { registrations: true, lineupPlan: true },
         }),
         prisma.teamMember.findMany({
           where: { teamId: team.id },
@@ -115,6 +115,20 @@ export async function getCalendarEventsForTeams(
       ? b.item.startsAt.getTime() - a.item.startsAt.getTime()
       : a.item.startsAt.getTime() - b.item.startsAt.getTime(),
   );
+}
+
+/** Unresolved "söker spelare" flags for a set of teams' still-upcoming activities. */
+export async function getActivePlayerRequests(teamIds: string[]) {
+  const now = new Date();
+  return prisma.playerRequest.findMany({
+    where: {
+      teamId: { in: teamIds },
+      resolvedAt: null,
+      OR: [{ training: { startsAt: { gte: now } } }, { match: { startsAt: { gte: now } } }],
+    },
+    include: { team: true, training: true, match: true },
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 export async function getStats(userId: string, teamId: string) {
@@ -235,4 +249,32 @@ export async function getTeamHighlights(teamId: string) {
     orderBy: { createdAt: "desc" },
     take: 8,
   });
+}
+
+/** Highlights grouped by which match/training they were filmed at (or by date, if not linked to one), most recent occasion first. */
+export async function getGroupedTeamHighlights(teamId: string) {
+  const highlights = await prisma.highlight.findMany({
+    where: { teamId },
+    include: { author: { select: { id: true, name: true } }, training: true, match: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const groups = new Map<string, { key: string; date: Date; label: string; items: typeof highlights }>();
+  for (const highlight of highlights) {
+    const key = highlight.trainingId
+      ? `training:${highlight.trainingId}`
+      : highlight.matchId
+        ? `match:${highlight.matchId}`
+        : `date:${highlight.createdAt.toDateString()}`;
+    const date = highlight.training?.startsAt ?? highlight.match?.startsAt ?? highlight.createdAt;
+    const label = highlight.training
+      ? `Träning · ${highlight.training.location}`
+      : highlight.match
+        ? `${highlight.match.isHome ? "Hemma" : "Borta"} vs ${highlight.match.opponent}`
+        : "Klipp";
+    if (!groups.has(key)) groups.set(key, { key, date, label, items: [] });
+    groups.get(key)!.items.push(highlight);
+  }
+
+  return Array.from(groups.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
 }

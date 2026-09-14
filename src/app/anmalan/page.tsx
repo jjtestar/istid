@@ -1,10 +1,14 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
 import { AttendanceControls } from "@/components/AttendanceControls";
+import { LineupView } from "@/components/LineupView";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow, StatusLabel } from "@/components/ui";
 import { DEFAULT_SEASON, getCurrentUser, getUserSeasonTeams } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
-import { getCalendarEventsForTeams, getUpcomingByTeam } from "@/lib/queries";
+import { LineupData } from "@/lib/lineup";
+import { getActivePlayerRequests, getCalendarEventsForTeams, getUpcomingByTeam } from "@/lib/queries";
+
+const POSITION_LABEL: Record<string, string> = { GOALKEEPER: "målvakt", SKATER: "utespelare" };
 
 export default async function AnmalanPage() {
   const user = await getCurrentUser();
@@ -16,9 +20,10 @@ export default async function AnmalanPage() {
   }
 
   const teamIds = teams.map((team) => team.id);
-  const [byTeam, weekEvents] = await Promise.all([
+  const [byTeam, weekEvents, playerRequests] = await Promise.all([
     getUpcomingByTeam(teams),
     getCalendarEventsForTeams(user.id, teamIds, 7),
+    getActivePlayerRequests(teamIds),
   ]);
 
   const featuredEvents = byTeam
@@ -35,6 +40,27 @@ export default async function AnmalanPage() {
     <div>
       <PageHeader title="Anmälan" />
       <main className="space-y-6 px-5 pb-10">
+        {playerRequests.length > 0 ? (
+          <Card className="border-2 border-signal bg-rink-line-red/40 p-4">
+            <Eyebrow tone="heading">Söker spelare</Eyebrow>
+            <div className="mt-2 space-y-2">
+              {playerRequests.map((request) => {
+                const activityLabel = request.training
+                  ? `Träning ${formatDateHeader(request.training.startsAt)} ${formatTime(request.training.startsAt)}`
+                  : request.match
+                    ? `${request.match.isHome ? "Hemma" : "Borta"} vs ${request.match.opponent}, ${formatDateHeader(request.match.startsAt)}`
+                    : "";
+                return (
+                  <p key={request.id} className="text-sm text-ink">
+                    <span className="font-bold">{request.team.name}</span> saknar {POSITION_LABEL[request.position]} till {activityLabel}
+                    {request.note ? ` — ${request.note}` : ""}
+                  </p>
+                );
+              })}
+            </div>
+          </Card>
+        ) : null}
+
         {featuredEvents.length === 0 ? (
           <Card className="p-5 text-center text-sm text-ink-subtle">
             Inga kommande träningar eller matcher att anmäla sig till.
@@ -63,6 +89,8 @@ export default async function AnmalanPage() {
               absenceReason: playerRegistration?.absenceReason ?? null,
             };
           });
+          const namesById = new Map(roster.map((member) => [member.userId, member.user.name ?? "Okänd spelare"]));
+          const lineupPlanData = item.lineupPlan?.data as LineupData | undefined;
 
           return (
             <Card key={`${kind}:${item.id}`} className="overflow-hidden p-4">
@@ -87,6 +115,7 @@ export default async function AnmalanPage() {
                   <p className="mt-1 text-sm text-ink-subtle">{item.location}</p>
                 </div>
               </div>
+              {lineupPlanData ? <LineupView data={lineupPlanData} namesById={namesById} /> : null}
               <div className="mt-4 border-t border-divider pt-4">
                 <AttendanceControls
                   formAction={respond}

@@ -1,11 +1,10 @@
 import { ExpandableList } from "@/components/ExpandableList";
-import { GoalHighlights } from "@/components/GoalHighlights";
 import { PageHeader } from "@/components/PageHeader";
 import { InstallAppButton } from "@/components/PwaProvider";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
-import { getCalendarEvents, getTeamHighlights } from "@/lib/queries";
+import { getCalendarEvents, getGroupedTeamHighlights } from "@/lib/queries";
 
 export default async function Home() {
   const { user, team } = await getCurrentUserWithTeam();
@@ -18,9 +17,9 @@ export default async function Home() {
     );
   }
 
-  const [historicEvents, highlights] = await Promise.all([
+  const [historicEvents, highlightGroups] = await Promise.all([
     getCalendarEvents(user.id, team.id, 1, true),
-    getTeamHighlights(team.id),
+    getGroupedTeamHighlights(team.id),
   ]);
   const latest = historicEvents[0] ?? null;
 
@@ -45,23 +44,36 @@ export default async function Home() {
 
         <Card className="p-5">
           <Eyebrow tone="heading">Highlights</Eyebrow>
-          <GoalHighlights />
-          {highlights.length > 0 ? <div className="mt-5 border-t border-divider pt-4">
-            <h3 className="mb-1 text-base font-bold text-ink">Fler klipp</h3>
-            <ExpandableList initialCount={3} moreLabel="Visa fler highlights" lessLabel="Visa färre highlights">
-              {highlights.map((highlight) => (
-                <a key={highlight.id} href={highlight.url} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-3 rounded-lg border-t border-divider py-3 first:border-t-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signal text-sm text-white" aria-hidden="true">▶</span>
-                  <div className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-bold text-ink underline decoration-divider underline-offset-4">
-                      {highlight.title}
-                    </span>
-                    <span className="text-[12px] text-ink-subtle">Länkat av {highlight.author.name ?? "spelare"}</span>
+          {highlightGroups.length > 0 ? (
+            <ExpandableList initialCount={3} moreLabel="Visa fler tillfällen" lessLabel="Visa färre tillfällen" className="mt-4 space-y-3">
+              {highlightGroups.map((group) => (
+                <details key={group.key} className="group rounded-xl border border-divider bg-white/60">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0">
+                      <span className="block text-[15px] font-bold text-ink">{group.label}</span>
+                      <span className="text-[12px] text-ink-subtle">{formatDateHeader(group.date)} · {group.items.length} klipp</span>
+                    </div>
+                    <span className="shrink-0 text-xs font-bold text-signal group-open:hidden">Visa</span>
+                  </summary>
+                  <div className="divide-y divide-divider border-t border-divider px-4">
+                    {group.items.map((highlight) => (
+                      <a key={highlight.id} href={highlight.url} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-3 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signal text-sm text-white" aria-hidden="true">▶</span>
+                        <div className="min-w-0 flex-1">
+                          <span className="block text-[15px] font-bold text-ink underline decoration-divider underline-offset-4">
+                            {highlight.title}
+                          </span>
+                          <span className="text-[12px] text-ink-subtle">Länkat av {highlight.author.name ?? "spelare"}</span>
+                        </div>
+                      </a>
+                    ))}
                   </div>
-                </a>
+                </details>
               ))}
             </ExpandableList>
-          </div> : null}
+          ) : (
+            <p className="mt-3 text-sm text-ink-subtle">Inga highlights ännu.</p>
+          )}
         </Card>
 
         <Card className="p-5">
