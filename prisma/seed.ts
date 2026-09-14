@@ -1,7 +1,14 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+// Runs as a plain Node CLI script (never in Vercel's edge/serverless runtime),
+// so it uses the standard node-postgres adapter over a normal TCP connection
+// instead of @neondatabase/serverless's WebSocket-tunnelled one from
+// src/lib/prisma.ts — that lets it run against a local Postgres too, not
+// just Neon's proxy endpoint.
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 const DAY = 24 * 60 * 60 * 1000;
 const CURRENT_SEASON = "2026/27";
 
