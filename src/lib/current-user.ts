@@ -34,7 +34,7 @@ export async function getCurrentUserWithTeam() {
   ]);
 
   if (!user) {
-    throw new Error("Den inloggade användaren finns inte i Istid.");
+    throw new Error("Den inloggade användaren finns inte i Femtekedjan.");
   }
 
   const selectedSlug = cookieStore.get("istid-team")?.value ?? DEFAULT_TEAM_SLUG;

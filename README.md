@@ -1,4 +1,4 @@
-# Istid
+# Femtekedjan
 
 Hockeyapp för anmälan till träningar och matcher, samt statistik. Byggt med
 Next.js (App Router), Prisma och Auth.js. Fristående app, separat från övriga

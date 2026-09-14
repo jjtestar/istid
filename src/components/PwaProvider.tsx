@@ -44,7 +44,7 @@ export function InstallAppButton() {
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4" />
       </svg>
-      Installera Istid
+      Installera Femtekedjan
     </button>
   );
 }
@@ -121,7 +121,7 @@ export function PwaProvider({ children }: { children: ReactNode }) {
       onUpdateFound();
       registration.addEventListener("updatefound", onUpdateFound);
     }).catch((error: unknown) => {
-      console.warn("Istids offlinefunktion kunde inte startas.", error);
+      console.warn("Femtekedjans offlinefunktion kunde inte startas.", error);
     });
     return () => {
       disposed = true;
@@ -159,7 +159,7 @@ export function PwaProvider({ children }: { children: ReactNode }) {
         </div>
       ) : waiting ? (
         <div className="pwa-notice" role="status">
-          <p className="font-bold">En ny version av Istid är klar</p>
+          <p className="font-bold">En ny version av Femtekedjan är klar</p>
           <p className="mt-1 text-sm text-ink-muted">Spara eventuella ändringar innan du uppdaterar.</p>
           <button type="button" onClick={() => {
             reloadForUpdate.current = true;
@@ -174,26 +174,26 @@ export function PwaProvider({ children }: { children: ReactNode }) {
 
       <dialog ref={dialog} aria-labelledby="pwa-install-title" className="pwa-install-dialog">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="pwa-install-title" className="section-title">Istid på hemskärmen</h2>
+          <h2 id="pwa-install-title" className="section-title">Femtekedjan på hemskärmen</h2>
           <button type="button" aria-label="Stäng installationshjälpen" onClick={() => dialog.current?.close()} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-2xl hover:bg-rink-crease">×</button>
         </div>
         <p className="mt-3 text-base leading-6 text-ink-muted">Öppna laget direkt från en egen appikon på telefonen.</p>
-        {prompt ? <button type="button" disabled={installing || offline} onClick={() => void installApp()} className="mt-5 min-h-12 w-full rounded-xl bg-ink px-4 text-base font-bold text-white disabled:opacity-50">{installing ? "Öppnar installation…" : "Installera Istid"}</button> : null}
+        {prompt ? <button type="button" disabled={installing || offline} onClick={() => void installApp()} className="mt-5 min-h-12 w-full rounded-xl bg-ink px-4 text-base font-bold text-white disabled:opacity-50">{installing ? "Öppnar installation…" : "Installera Femtekedjan"}</button> : null}
         {installError ? <p role="alert" className="mt-3 text-sm text-signal">{installError}</p> : null}
         {ios ? (
           <ol className="mt-5 list-decimal space-y-3 pl-5 text-base leading-6">
-            <li>Öppna Istid i <strong>Safari</strong>.</li>
+            <li>Öppna Femtekedjan i <strong>Safari</strong>.</li>
             <li>Tryck på <strong>Dela</strong> och välj <strong>Lägg till på hemskärmen</strong>.</li>
             <li>Om valet visas, aktivera <strong>Öppna som webbapp</strong>. Tryck på <strong>Lägg till</strong>.</li>
           </ol>
         ) : !prompt ? (
           <ol className="mt-5 list-decimal space-y-3 pl-5 text-base leading-6">
-            <li>Öppna Istid i <strong>Chrome</strong>.</li>
+            <li>Öppna Femtekedjan i <strong>Chrome</strong>.</li>
             <li>Öppna webbläsarens meny och välj <strong>Installera app</strong> eller <strong>Lägg till på startskärmen</strong>.</li>
             <li>Bekräfta installationen.</li>
           </ol>
         ) : null}
-        <p className="mt-5 text-sm leading-5 text-ink-subtle">Öppna sedan Istid från den nya ikonen. Du kan behöva logga in första gången.</p>
+        <p className="mt-5 text-sm leading-5 text-ink-subtle">Öppna sedan Femtekedjan från den nya ikonen. Du kan behöva logga in första gången.</p>
       </dialog>
     </InstallContext.Provider>
   );

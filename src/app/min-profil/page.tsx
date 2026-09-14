@@ -67,7 +67,7 @@ export default async function MinProfilPage() {
           <Eyebrow>Integritet</Eyebrow>
           <h2 className="mt-1 section-title">Dina uppgifter och rättigheter</h2>
           <p className="mt-2 text-sm leading-6 text-ink-subtle">
-            Se hur Istid använder dina personuppgifter, hämta en kopia eller kontakta oss om
+            Se hur Femtekedjan använder dina personuppgifter, hämta en kopia eller kontakta oss om
             rättelse och radering.
           </p>
           <Link

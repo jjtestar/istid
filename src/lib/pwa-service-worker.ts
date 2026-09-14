@@ -1,7 +1,7 @@
 export function serviceWorkerSource(version: string) {
   return `const CACHE = ${JSON.stringify(`istid-public-${version}`)};
 const OFFLINE = "/pwa/offline.html";
-const PUBLIC_FILES = [OFFLINE, "/pwa/icon-192.png", "/pwa/icon-512.png", "/pwa/icon-maskable-512.png", "/pwa/apple-touch-icon.png"];
+const PUBLIC_FILES = [OFFLINE, "/pwa/skate-192.png", "/pwa/skate-512.png", "/pwa/skate-maskable-512.png", "/pwa/skate-apple-touch-icon.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PUBLIC_FILES)));
@@ -29,7 +29,7 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
   if (request.mode === "navigate") {
     event.respondWith(fetch(request).catch(async () => {
-      return (await caches.match(OFFLINE)) ?? new Response("Istid behöver internetanslutning.", {
+      return (await caches.match(OFFLINE)) ?? new Response("Femtekedjan behöver internetanslutning.", {
         status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" },
       });
     }));

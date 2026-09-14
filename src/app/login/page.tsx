@@ -14,7 +14,7 @@ export default async function LoginPage() {
         <div className="mb-7">
           <div className="mb-3 flex items-center gap-3">
             <span className="h-1.5 w-10 rounded-full bg-signal" aria-hidden="true" />
-            <Eyebrow>Istid</Eyebrow>
+            <Eyebrow>Femtekedjan</Eyebrow>
           </div>
           <h1 className="page-title">
             Välkommen tillbaka

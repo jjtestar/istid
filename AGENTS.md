@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Product identity
+
+The public app name is **Femtekedjan**. Use this name in the UI, page metadata, PWA manifest, installation help, exports, and documentation. The selected app icon is the white hockey skate with a red boot panel on navy blue. The repository name `istid` and existing `istid-*` cookie/cache identifiers are legacy technical identifiers; keep them stable for compatibility.

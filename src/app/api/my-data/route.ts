@@ -92,7 +92,7 @@ export async function GET() {
 
   const exportData = {
     exportedAt: new Date().toISOString(),
-    service: "Istid",
+    service: "Femtekedjan",
     account: {
       id: user.id,
       name: user.name,
@@ -114,7 +114,7 @@ export async function GET() {
   return new Response(JSON.stringify(exportData, null, 2), {
     headers: {
       "Cache-Control": "no-store",
-      "Content-Disposition": `attachment; filename="istid-mina-uppgifter-${date}.json"`,
+      "Content-Disposition": `attachment; filename="femtekedjan-mina-uppgifter-${date}.json"`,
       "Content-Type": "application/json; charset=utf-8",
     },
   });

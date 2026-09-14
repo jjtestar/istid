@@ -11,14 +11,14 @@ const barlow = Barlow({
 });
 
 export const metadata: Metadata = {
-  title: "Istid",
+  title: "Femtekedjan",
   description: "Anmälan till träningar och matcher, samt statistik.",
-  applicationName: "Istid",
+  applicationName: "Femtekedjan",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Istid", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Femtekedjan", statusBarStyle: "default" },
   icons: {
-    icon: [{ url: "/pwa/icon-192.png", sizes: "192x192", type: "image/png" }],
-    apple: [{ url: "/pwa/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    icon: [{ url: "/pwa/skate-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/pwa/skate-apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 

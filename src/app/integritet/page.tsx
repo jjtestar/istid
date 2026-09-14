@@ -3,9 +3,9 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow } from "@/components/ui";
 
 const company = {
-  name: "Istid Test AB (fiktivt)",
+  name: "Femtekedjan Test AB (fiktivt)",
   organisationNumber: "000000-0000",
-  email: "gdpr@istid.example",
+  email: "gdpr@femtekedjan.example",
   address: "Testgatan 1, 123 45 Teststad",
 };
 
@@ -16,18 +16,18 @@ function emailHref(subject: string, body: string) {
 const contactActions = [
   {
     label: "Begär registerutdrag",
-    subject: "Begäran om registerutdrag i Istid",
-    body: "Hej,\n\nJag vill begära tillgång till de personuppgifter som behandlas om mig i Istid.\n\nE-post för mitt konto:\n",
+    subject: "Begäran om registerutdrag i Femtekedjan",
+    body: "Hej,\n\nJag vill begära tillgång till de personuppgifter som behandlas om mig i Femtekedjan.\n\nE-post för mitt konto:\n",
   },
   {
     label: "Begär rättelse",
-    subject: "Begäran om rättelse i Istid",
-    body: "Hej,\n\nJag vill rätta följande personuppgifter i Istid:\n\n",
+    subject: "Begäran om rättelse i Femtekedjan",
+    body: "Hej,\n\nJag vill rätta följande personuppgifter i Femtekedjan:\n\n",
   },
   {
     label: "Begär radering",
-    subject: "Begäran om radering i Istid",
-    body: "Hej,\n\nJag vill begära att mina personuppgifter och mitt konto i Istid raderas.\n\nE-post för mitt konto:\n",
+    subject: "Begäran om radering i Femtekedjan",
+    body: "Hej,\n\nJag vill begära att mina personuppgifter och mitt konto i Femtekedjan raderas.\n\nE-post för mitt konto:\n",
   },
 ];
 
@@ -100,7 +100,7 @@ export default function IntegritetPage() {
         </Card>
 
         <Card className="p-5">
-          <Eyebrow>Så använder Istid uppgifter</Eyebrow>
+          <Eyebrow>Så använder Femtekedjan uppgifter</Eyebrow>
           <div className="mt-3 space-y-4 text-sm leading-6 text-ink-subtle">
             <section>
               <h2 className="font-bold text-ink">Vilka uppgifter?</h2>
@@ -143,7 +143,7 @@ export default function IntegritetPage() {
               <h2 className="font-bold text-ink">Krav, profilering och kakor</h2>
               <p>
                 E-post och namn behövs för konto och lagadministration; utan dem kan tjänsten
-                inte användas. Övriga spelaruppgifter är frivilliga. Istid använder inte
+                inte användas. Övriga spelaruppgifter är frivilliga. Femtekedjan använder inte
                 automatiserat beslutsfattande eller profilering. Endast nödvändiga
                 inloggnings- och sessionskakor används i den här versionen.
               </p>
@@ -174,7 +174,7 @@ export default function IntegritetPage() {
           <Eyebrow>Åldersgräns</Eyebrow>
           <h2 className="mt-1 section-title">Endast vuxna, 18+</h2>
           <p className="mt-2 text-sm leading-6 text-ink-subtle">
-            Istid är avsedd enbart för personer som har fyllt 18 år. Konton för minderåriga ska
+            Femtekedjan är avsedd enbart för personer som har fyllt 18 år. Konton för minderåriga ska
             inte skapas i tjänsten.
           </p>
         </Card>
