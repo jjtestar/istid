@@ -14,6 +14,6 @@ export function normalizePin(value: string) {
   return value.replace(/\D/g, "");
 }
 
-export function secureHash(value: string, purpose: "invite" | "registration-attempt") {
+export function secureHash(value: string, purpose: "invite" | "registration-attempt" | "login-attempt") {
   return createHmac("sha256", secret()).update(`${purpose}:${value}`).digest("hex");
 }

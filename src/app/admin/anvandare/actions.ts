@@ -72,11 +72,27 @@ export async function setSuperAdmin(formData: FormData) {
   if (!userId || userId === admin.id) return;
   const target = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, isSuperAdmin: true } });
   if (!target) return;
-  if (enabled) {
-    const count = await prisma.user.count({ where: { isSuperAdmin: true } });
-    if (count >= 2) return;
+
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        if (enabled) {
+          const count = await tx.user.count({ where: { isSuperAdmin: true } });
+          if (count >= 2) throw new Error("SUPERADMIN_LIMIT_REACHED");
+        }
+        await tx.user.update({ where: { id: userId }, data: { isSuperAdmin: enabled, role: enabled ? "ADMIN" : undefined } });
+      },
+      // Serializable so two concurrent "gör till huvudadmin" clicks can't both
+      // pass the count check and push the total past 2 — one transaction
+      // loses the race and rolls back instead of silently over-committing.
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message === "SUPERADMIN_LIMIT_REACHED") return;
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") return;
+    throw error;
   }
-  await prisma.user.update({ where: { id: userId }, data: { isSuperAdmin: enabled, role: enabled ? "ADMIN" : undefined } });
+
   await audit(admin.id, enabled ? "Utsåg huvudadmin" : "Tog bort huvudadmin", "User", userId);
   revalidatePath("/admin/anvandare");
 }
