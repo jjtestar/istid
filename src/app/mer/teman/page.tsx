@@ -40,11 +40,9 @@ export default async function ThemesPage() {
           <ChevronIcon className="h-4 w-4 rotate-180" /> Tillbaka till Mer
         </Link>
 
-        <div>
-          <p className="text-sm text-ink-muted">
-            Välj hur Femtekedjan ska se ut. Ditt val sparas på ditt konto och följer med mellan enheter.
-          </p>
-        </div>
+        <p className="text-sm text-ink-muted">
+          Välj hur Femtekedjan ska se ut. Ditt val sparas på ditt konto och följer med mellan enheter.
+        </p>
 
         <form action={setTheme} className="grid gap-4 md:grid-cols-2">
           {themes.map((theme) => {
@@ -56,11 +54,17 @@ export default async function ThemesPage() {
                 name="theme"
                 value={theme.id}
                 aria-pressed={selected}
-                className={`theme-choice group overflow-hidden rounded-2xl border p-1 text-left transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
+                className={`theme-choice group overflow-hidden border p-1 text-left transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
                   selected ? "border-ink ring-2 ring-ink/15" : "border-divider hover:border-ink-subtle"
                 }`}
               >
-                <div className="theme-preview flex h-28 items-end gap-2 rounded-[calc(var(--radius-card)-4px)] p-4" style={{ background: theme.swatches[0] }}>
+                <div
+                  className="theme-preview flex h-28 items-end gap-2 p-4"
+                  style={{
+                    background: theme.swatches[0],
+                    borderRadius: "calc(var(--radius-card) - 4px)",
+                  }}
+                >
                   <div className="h-11 flex-1 rounded-xl" style={{ background: theme.swatches[1] }} />
                   <div className="h-8 w-12 rounded-xl" style={{ background: theme.swatches[2] }} />
                   <div className="h-8 w-8 rounded-full" style={{ background: theme.swatches[3] }} />
@@ -76,7 +80,7 @@ export default async function ThemesPage() {
                     }`}
                     aria-hidden="true"
                   >
-                    {selected ? <span className="h-2 w-2 rounded-full bg-white" /> : null}
+                    {selected ? <span className="h-2 w-2 rounded-full bg-accent" /> : null}
                   </span>
                 </div>
               </button>
