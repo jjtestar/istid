@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow } from "next/font/google";
 import { BottomNav } from "@/components/BottomNav";
 import { PwaProvider } from "@/components/PwaProvider";
+import { getThemePreference } from "@/lib/theme";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -26,12 +27,13 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#ffffff",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const theme = await getThemePreference();
+
   return (
-    <html lang="sv" className={`${barlow.variable} h-full antialiased`}>
+    <html lang="sv" data-theme={theme} className={`${barlow.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-surface text-ink">
         <PwaProvider>
           <div className="app-background" aria-hidden="true" />
