@@ -75,6 +75,7 @@
   --color-rink-goalline: #57493c;
   --color-rink-crease: #182627;
   --color-divider: var(--border-subtle);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -227,15 +228,17 @@ body {
 
 /* Existing screens use white utility surfaces. Remap those surfaces in the dark theme. */
 [data-theme="mint"] .bg-white,
-[data-theme="mint"] [class~="bg-white/95"],
-[data-theme="mint"] [class~="bg-white/90"],
-[data-theme="mint"] [class~="bg-white/80"],
-[data-theme="mint"] [class~="bg-white/[0.92]"] {
+[data-theme="mint"] [class^="bg-white/"],
+[data-theme="mint"] [class*=" bg-white/"] {
   background-color: var(--surface) !important;
 }
 
 [data-theme="mint"] .bg-ink {
   background-color: var(--surface-green) !important;
+}
+
+[data-theme="mint"] [class~="bg-ink/55"] {
+  background-color: rgb(10 17 19 / 72%) !important;
 }
 
 [data-theme="mint"] .border-ink {
