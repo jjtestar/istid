@@ -42,7 +42,15 @@ body {
 }
 
 .app-shell { min-height: calc(100dvh - env(safe-area-inset-top, 0px)); }
+.app-content { max-width: 80rem; }
 .app-bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+@media (min-width: 768px) {
+  body:has(.desktop-navigation) .app-content { min-height: 100dvh; padding-left: 15rem; }
+  .app-bottom-nav { display: none; }
+  .app-background { width: min(100%, 80rem); }
+  .app-content main { width: 100%; padding-left: 2rem; padding-right: 2rem; }
+}
 
 .pwa-notice {
   position: fixed;
@@ -116,7 +124,7 @@ body {
   inset-block: 0;
   left: 50%;
   z-index: 0;
-  width: min(100%, 28rem);
+  width: min(100%, 80rem);
   transform: translateX(-50%);
   pointer-events: none;
   background-image:

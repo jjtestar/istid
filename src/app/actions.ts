@@ -26,10 +26,16 @@ function getResponse(formData: FormData) {
 }
 
 export async function changeAppContext(formData: FormData) {
-  await getCurrentUser();
+  const user = await getCurrentUser();
   const requestedTeam = String(formData.get("teamSlug") ?? "");
   const requestedSeason = String(formData.get("season") ?? "");
-  const availableTeams = await prisma.team.findMany({ select: { name: true, season: true } });
+  const availableTeams = await prisma.team.findMany({
+    where:
+      user.role === "ADMIN" || user.isSuperAdmin
+        ? undefined
+        : { members: { some: { userId: user.id } } },
+    select: { name: true, season: true },
+  });
   const selectionExists = availableTeams.some(
     (team) => teamSlug(team.name) === requestedTeam && team.season === requestedSeason,
   );
@@ -48,6 +54,11 @@ export async function respondToTraining(formData: FormData) {
   const response = getResponse(formData);
   if (!trainingId || !response) return;
   const user = await getCurrentUser();
+  const allowed = user.role === "ADMIN" || user.isSuperAdmin || Boolean(await prisma.training.findFirst({
+    where: { id: trainingId, team: { members: { some: { userId: user.id } } } },
+    select: { id: true },
+  }));
+  if (!allowed) return;
 
   await prisma.trainingRegistration.upsert({
     where: { trainingId_userId: { trainingId, userId: user.id } },
@@ -65,6 +76,11 @@ export async function respondToMatch(formData: FormData) {
   const response = getResponse(formData);
   if (!matchId || !response) return;
   const user = await getCurrentUser();
+  const allowed = user.role === "ADMIN" || user.isSuperAdmin || Boolean(await prisma.match.findFirst({
+    where: { id: matchId, team: { members: { some: { userId: user.id } } } },
+    select: { id: true },
+  }));
+  if (!allowed) return;
 
   await prisma.matchRegistration.upsert({
     where: { matchId_userId: { matchId, userId: user.id } },

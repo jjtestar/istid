@@ -45,6 +45,7 @@ model User {
   createdAt     DateTime   @default(now())
   isActive      Boolean    @default(true)
   accessApproved Boolean   @default(false)
+  isSuperAdmin   Boolean    @default(false)
 
   teams                 TeamMember[]
   trainingRegistrations TrainingRegistration[]
@@ -53,6 +54,8 @@ model User {
   highlights            Highlight[]
   createdInviteCodes    InviteCode[] @relation("InviteCreator")
   usedInviteCode        InviteCode?  @relation("InviteUser")
+  payments              Payment[]
+  adminAuditLogs        AdminAuditLog[] @relation("AuditActor")
 }
 
 model Team {
@@ -66,6 +69,7 @@ model Team {
   matches    Match[]
   highlights Highlight[]
   inviteCodes InviteCode[]
+  payments    Payment[]
 }
 
 model TeamMember {
@@ -197,4 +201,38 @@ model RegistrationAttempt {
   windowStartedAt DateTime  @default(now())
   blockedUntil    DateTime?
   updatedAt       DateTime  @updatedAt
+}
+
+
+model Payment {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  title     String
+  amountOre Int
+  dueDate   DateTime
+  paidAt    DateTime?
+  note      String?
+  createdAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([teamId, dueDate])
+  @@index([userId, dueDate])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  entityType String
+  entityId   String?
+  details    String?
+  createdAt  DateTime @default(now())
+
+  actor User @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
 }

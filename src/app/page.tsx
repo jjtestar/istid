@@ -28,12 +28,6 @@ export default async function Home() {
     <div>
       <PageHeader title="Hem" right={<InstallAppButton />} />
       <main className="space-y-6 px-5 pb-10">
-        <header className="mb-4">
-          <h2 className="section-title">
-            Hej, {user.name}
-          </h2>
-        </header>
-
         <Card className="overflow-hidden p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <Eyebrow tone="heading">Information</Eyebrow>

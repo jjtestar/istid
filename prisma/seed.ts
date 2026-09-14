@@ -117,8 +117,10 @@ async function main() {
       const [id, name, email] = player;
       await prisma.user.upsert({
         where: { id },
-        update: { name, email, passwordHash, role: id === "user-johan" ? "ADMIN" : "PLAYER", accessApproved: true },
-        create: { id, name, email, passwordHash, role: id === "user-johan" ? "ADMIN" : "PLAYER", accessApproved: true },
+        update: id === "user-johan"
+          ? { name, email, passwordHash, role: "ADMIN", accessApproved: true, isSuperAdmin: true }
+          : { name, email, passwordHash, accessApproved: true },
+        create: { id, name, email, passwordHash, role: id === "user-johan" ? "ADMIN" : "PLAYER", accessApproved: true, isSuperAdmin: id === "user-johan" },
       });
     }
 

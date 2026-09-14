@@ -25,17 +25,22 @@ export async function getCurrentUserWithTeam() {
 
   const cookieStore = await cookies();
 
-  const [user, availableTeams] = await Promise.all([
-    prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: { teams: true },
-    }),
-    prisma.team.findMany({ orderBy: [{ season: "desc" }, { name: "asc" }] }),
-  ]);
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: { teams: true },
+  });
 
-  if (!user) {
+  if (!user || !user.isActive || !user.accessApproved) {
     throw new Error("Den inloggade användaren finns inte i Femtekedjan.");
   }
+
+  const availableTeams =
+    user.role === "ADMIN" || user.isSuperAdmin
+      ? await prisma.team.findMany({ orderBy: [{ season: "desc" }, { name: "asc" }] })
+      : await prisma.team.findMany({
+          where: { members: { some: { userId: user.id } } },
+          orderBy: [{ season: "desc" }, { name: "asc" }],
+        });
 
   const selectedSlug = cookieStore.get("istid-team")?.value ?? DEFAULT_TEAM_SLUG;
   const selectedSeason = cookieStore.get("istid-season")?.value ?? DEFAULT_SEASON;

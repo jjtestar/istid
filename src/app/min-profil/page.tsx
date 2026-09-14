@@ -71,7 +71,7 @@ export default async function MinProfilPage() {
               Bjud in nya spelare, återkalla koder och hantera åtkomst.
             </p>
             <Link
-              href="/admin/anvandare"
+              href="/admin"
               className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-ink px-5 text-base font-bold text-white"
             >
               Hantera användare

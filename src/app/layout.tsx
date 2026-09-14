@@ -35,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-surface text-ink">
         <PwaProvider>
           <div className="app-background" aria-hidden="true" />
-          <div className="relative z-[1] mx-auto flex w-full max-w-md flex-1 flex-col">
+          <div className="app-content relative z-[1] mx-auto flex w-full flex-1 flex-col">
             {children}
           </div>
           <BottomNav />
