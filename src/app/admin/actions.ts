@@ -45,6 +45,43 @@ export async function createTeam(formData: FormData) {
   revalidatePath("/admin/lag");
 }
 
+export async function updateTeam(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const id = text(formData, "teamId");
+  const name = text(formData, "name");
+  const season = text(formData, "season");
+  if (name.length < 2) return { error: "Ange ett lagnamn." };
+  if (!/^\d{4}\/\d{2}$/.test(season)) return { error: "Säsong ska skrivas som 2026/27." };
+  const team = await prisma.team.update({ where: { id }, data: { name, season } }).catch(() => null);
+  if (!team) return { error: "Laget hittades inte." };
+  await audit(admin.id, "Ändrade lag", "Team", team.id, `${name} · ${season}`);
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/lag");
+  return { success: "Laget sparades." };
+}
+
+export async function archiveTeam(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const id = text(formData, "teamId");
+  const team = await prisma.team.update({ where: { id }, data: { archivedAt: new Date() } }).catch(() => null);
+  if (!team) return { error: "Laget hittades inte." };
+  await audit(admin.id, "Arkiverade lag", "Team", team.id, team.name);
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/lag");
+  return { success: "Laget arkiverades." };
+}
+
+export async function unarchiveTeam(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const id = text(formData, "teamId");
+  const team = await prisma.team.update({ where: { id }, data: { archivedAt: null } }).catch(() => null);
+  if (!team) return { error: "Laget hittades inte." };
+  await audit(admin.id, "Återställde arkiverat lag", "Team", team.id, team.name);
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/lag");
+  return { success: "Laget är aktivt igen." };
+}
+
 export async function assignTeamMember(formData: FormData) {
   const admin = await requireAdmin();
   const teamId = text(formData, "teamId");

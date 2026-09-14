@@ -12,7 +12,7 @@ const date = (value: Date) => new Intl.DateTimeFormat("sv-SE", { dateStyle: "med
 export default async function AdminHighlightsPage() {
   await requireAdmin();
   const [teams, trainings, matches, highlights] = await Promise.all([
-    prisma.team.findMany({ orderBy: [{ season: "desc" }, { name: "asc" }] }),
+    prisma.team.findMany({ where: { archivedAt: null }, orderBy: [{ season: "desc" }, { name: "asc" }] }),
     prisma.training.findMany({ orderBy: { startsAt: "desc" }, take: 60, select: { id: true, teamId: true, startsAt: true, location: true } }),
     prisma.match.findMany({ orderBy: { startsAt: "desc" }, take: 60, select: { id: true, teamId: true, startsAt: true, opponent: true } }),
     prisma.highlight.findMany({

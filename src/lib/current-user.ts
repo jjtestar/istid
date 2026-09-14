@@ -36,9 +36,9 @@ export async function getCurrentUserWithTeam() {
 
   const availableTeams =
     user.role === "ADMIN" || user.isSuperAdmin
-      ? await prisma.team.findMany({ orderBy: [{ season: "desc" }, { name: "asc" }] })
+      ? await prisma.team.findMany({ where: { archivedAt: null }, orderBy: [{ season: "desc" }, { name: "asc" }] })
       : await prisma.team.findMany({
-          where: { members: { some: { userId: user.id } } },
+          where: { archivedAt: null, members: { some: { userId: user.id } } },
           orderBy: [{ season: "desc" }, { name: "asc" }],
         });
 
@@ -85,13 +85,14 @@ export async function getUserSeasonTeams(userId: string, isAdmin: boolean, seaso
   return prisma.team.findMany({
     where: {
       season,
+      archivedAt: null,
       ...(isAdmin ? {} : { members: { some: { userId } } }),
     },
     orderBy: { name: "asc" },
   });
 }
 
-/** Every season the user has ever belonged to a team in (all seasons for admins). */
+/** Every season the user has ever belonged to a team in (all seasons for admins). Archived teams are excluded from the current season but still browsable historically. */
 export async function getUserSeasons(userId: string, isAdmin: boolean) {
   const teams = await prisma.team.findMany({
     where: isAdmin ? {} : { members: { some: { userId } } },

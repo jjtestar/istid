@@ -22,7 +22,7 @@ export default async function AdminPaymentsPage({
   const teamFilter = typeof params.lag === "string" ? params.lag : "";
 
   const [teams, members, payments] = await Promise.all([
-    prisma.team.findMany({ orderBy: [{ season: "desc" }, { name: "asc" }] }),
+    prisma.team.findMany({ where: { archivedAt: null }, orderBy: [{ season: "desc" }, { name: "asc" }] }),
     prisma.teamMember.findMany({ orderBy: { user: { name: "asc" } }, include: { user: true, team: true } }),
     prisma.payment.findMany({
       where: teamFilter ? { teamId: teamFilter } : undefined,

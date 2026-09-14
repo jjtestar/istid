@@ -68,10 +68,11 @@ model User {
 }
 
 model Team {
-  id        String   @id @default(cuid())
-  name      String
-  season    String
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  name       String
+  season     String
+  createdAt  DateTime  @default(now())
+  archivedAt DateTime?
 
   members    TeamMember[]
   trainings  Training[]

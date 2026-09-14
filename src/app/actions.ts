@@ -30,10 +30,10 @@ export async function changeAppContext(formData: FormData) {
   const requestedTeam = String(formData.get("teamSlug") ?? "");
   const requestedSeason = String(formData.get("season") ?? "");
   const availableTeams = await prisma.team.findMany({
-    where:
-      user.role === "ADMIN" || user.isSuperAdmin
-        ? undefined
-        : { members: { some: { userId: user.id } } },
+    where: {
+      archivedAt: null,
+      ...(user.role === "ADMIN" || user.isSuperAdmin ? {} : { members: { some: { userId: user.id } } }),
+    },
     select: { name: true, season: true },
   });
   const selectionExists = availableTeams.some(

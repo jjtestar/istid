@@ -64,7 +64,7 @@ function PlayerRequestSection({
 export default async function AdminActivitiesPage() {
   await requireAdmin();
   const [teams, trainings, matches] = await Promise.all([
-    prisma.team.findMany({ orderBy: [{ season: "desc" }, { name: "asc" }] }),
+    prisma.team.findMany({ where: { archivedAt: null }, orderBy: [{ season: "desc" }, { name: "asc" }] }),
     prisma.training.findMany({ orderBy: { startsAt: "desc" }, take: 30, include: { team: true, playerRequests: { where: { resolvedAt: null } } } }),
     prisma.match.findMany({ orderBy: { startsAt: "desc" }, take: 30, include: { team: true, playerRequests: { where: { resolvedAt: null } } } }),
   ]);

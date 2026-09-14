@@ -10,7 +10,7 @@ const date=(value:Date)=>new Intl.DateTimeFormat("sv-SE",{dateStyle:"medium"}).f
 export default async function UserAdminPage(){
   const admin=await requireAdmin();
   const [teams,invitations,users,superCount]=await Promise.all([
-    prisma.team.findMany({orderBy:[{season:"desc"},{name:"asc"}],select:{id:true,name:true,season:true}}),
+    prisma.team.findMany({where:{archivedAt:null},orderBy:[{season:"desc"},{name:"asc"}],select:{id:true,name:true,season:true}}),
     prisma.inviteCode.findMany({orderBy:{createdAt:"desc"},take:30,include:{team:{select:{name:true,season:true}},usedBy:{select:{name:true}}}}),
     prisma.user.findMany({orderBy:[{isSuperAdmin:"desc"},{role:"desc"},{name:"asc"}],select:{id:true,name:true,email:true,role:true,isActive:true,isSuperAdmin:true,teams:{select:{team:{select:{name:true}}}}}}),
     prisma.user.count({where:{isSuperAdmin:true}}),
