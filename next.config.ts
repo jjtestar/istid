@@ -2,19 +2,19 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   outputFileTracingExcludes: {
-    // The app only ever talks to Postgres through @prisma/adapter-neon, so the
-    // native/WASM query engine and the query compilers for every other SQL
-    // dialect are dead weight Next's tracer would otherwise copy into every
-    // function bundle.
+    // prisma/schema.prisma sets generator.engineType = "client": this build
+    // never touches the classic query engine at runtime (no native binary,
+    // no engine WASM — Prisma's own generated config sets engineWasm to
+    // undefined for this mode). The only file it loads is the query
+    // *compiler* WASM/JS pair Prisma generates specifically for this
+    // schema's single datasource into node_modules/.prisma/client/
+    // query_compiler_bg.{js,wasm} (see src/lib/prisma.ts). Everything under
+    // @prisma/client/runtime/ is the package's generic per-dialect/per-
+    // engine-type template set that's never required at runtime — safe to
+    // drop from every function bundle.
     "*": [
-      "./node_modules/.prisma/client/libquery_engine-*",
-      "./node_modules/.prisma/client/query_engine-*",
-      "./node_modules/.prisma/client/query_engine_bg.*",
       "./node_modules/@prisma/client/runtime/query_engine_bg.*",
-      "./node_modules/@prisma/client/runtime/query_compiler_bg.cockroachdb.*",
-      "./node_modules/@prisma/client/runtime/query_compiler_bg.mysql.*",
-      "./node_modules/@prisma/client/runtime/query_compiler_bg.sqlite.*",
-      "./node_modules/@prisma/client/runtime/query_compiler_bg.sqlserver.*",
+      "./node_modules/@prisma/client/runtime/query_compiler_bg.*",
       "./node_modules/@prisma/engines/**",
     ],
   },
