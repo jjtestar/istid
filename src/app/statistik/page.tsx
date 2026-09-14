@@ -44,9 +44,10 @@ export default async function StatistikPage({
     requestedView === "topplistor" || requestedView === "laget" ? requestedView : "spelare";
   const stats = await getTeamStats(team.id);
   const requestedPlayerId = typeof params.spelare === "string" ? params.spelare : null;
+  const ownPlayer = stats.playerStats.find((player) => player.userId === user.id);
   const selectedPlayer =
     stats.playerStats.find((player) => player.userId === requestedPlayerId) ??
-    stats.playerStats.find((player) => player.userId === user.id) ??
+    ownPlayer ??
     stats.playerStats[0] ??
     null;
   const individualStats =
@@ -117,11 +118,29 @@ export default async function StatistikPage({
             <Card className="p-4">
               <form method="get">
                 <input type="hidden" name="vy" value="spelare" />
-                <Eyebrow tone="heading">Välj spelare</Eyebrow>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Eyebrow tone="heading">Välj spelare</Eyebrow>
+                  {ownPlayer ? (
+                    <Link
+                      href={statisticsHref("spelare", user.id)}
+                      scroll={false}
+                      aria-current={selectedPlayer?.userId === user.id ? "page" : undefined}
+                      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
+                        selectedPlayer?.userId === user.id
+                          ? "border-ink bg-ink text-white"
+                          : "border-divider text-ink hover:border-ink hover:bg-rink-crease"
+                      }`}
+                    >
+                      {selectedPlayer?.userId === user.id ? <span aria-hidden="true">✓</span> : null}
+                      Min statistik
+                    </Link>
+                  ) : null}
+                </div>
                 <div className="mt-3 grid grid-cols-1 min-[400px]:grid-cols-[minmax(0,1fr)_auto] gap-2">
                   <label className="min-w-0">
                     <span className="sr-only">Välj spelare</span>
                     <select
+                      key={selectedPlayer?.userId ?? "empty"}
                       name="spelare"
                       aria-label="Välj spelare"
                       defaultValue={selectedPlayer?.userId ?? ""}
@@ -130,6 +149,7 @@ export default async function StatistikPage({
                       {stats.playerStats.map((player) => (
                         <option key={player.userId} value={player.userId}>
                           #{player.jerseyNo ?? "–"} {player.name ?? "Okänd spelare"}
+                          {player.userId === user.id ? " (du)" : ""}
                         </option>
                       ))}
                     </select>
