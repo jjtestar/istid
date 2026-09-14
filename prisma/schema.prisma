@@ -46,6 +46,7 @@ model User {
   isActive      Boolean    @default(true)
   accessApproved Boolean   @default(false)
   isSuperAdmin   Boolean    @default(false)
+  theme          String     @default("classic")
 
   teams                 TeamMember[]
   trainingRegistrations TrainingRegistration[]

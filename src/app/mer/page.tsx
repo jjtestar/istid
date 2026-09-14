@@ -5,6 +5,7 @@ import { InstallAppButton } from "@/components/PwaProvider";
 import { Card, Eyebrow } from "@/components/ui";
 import { signOut } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/current-user";
+import { normalizeTheme } from "@/lib/theme";
 
 const cards = [
   { href: "/min-profil", label: "Min profil", icon: ProfileIcon, tone: "text-ink" },
@@ -16,6 +17,7 @@ const cards = [
 export default async function MorePage() {
   const user = await getCurrentUser();
   const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
+  const activeTheme = normalizeTheme(user.theme) === "mint" ? "Mörk mint" : "Original";
 
   return (
     <div>
@@ -39,7 +41,11 @@ export default async function MorePage() {
         <section>
           <Eyebrow>Inställningar</Eyebrow>
           <Card className="mt-3 overflow-hidden">
-            <div className="flex min-h-14 items-center justify-between gap-3 px-4 py-3">
+            <Link href="/mer/teman" className="flex min-h-14 items-center justify-between gap-3 px-4 py-3 text-ink">
+              <div><p className="font-bold">Teman</p><p className="text-xs text-ink-subtle">{activeTheme}</p></div>
+              <ChevronIcon className="h-5 w-5 text-ink-subtle" />
+            </Link>
+            <div className="flex min-h-14 items-center justify-between gap-3 border-t border-divider px-4 py-3">
               <div><p className="font-bold text-ink">Installera Femtekedjan</p><p className="text-xs text-ink-subtle">Lägg appen på hemskärmen</p></div>
               <InstallAppButton />
             </div>
