@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ContextSwitcher } from "@/components/ContextSwitcher";
 import { PageHeader } from "@/components/PageHeader";
+import { StatisticsPlayerPicker } from "@/components/StatisticsPlayerPicker";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader } from "@/lib/format";
@@ -116,52 +117,11 @@ export default async function StatistikPage({
         {view === "spelare" ? (
           <>
             <Card className="p-4">
-              <form method="get">
-                <input type="hidden" name="vy" value="spelare" />
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Eyebrow tone="heading">Välj spelare</Eyebrow>
-                  {ownPlayer ? (
-                    <Link
-                      href={statisticsHref("spelare", user.id)}
-                      scroll={false}
-                      aria-current={selectedPlayer?.userId === user.id ? "page" : undefined}
-                      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
-                        selectedPlayer?.userId === user.id
-                          ? "border-ink bg-ink text-white"
-                          : "border-divider text-ink hover:border-ink hover:bg-rink-crease"
-                      }`}
-                    >
-                      {selectedPlayer?.userId === user.id ? <span aria-hidden="true">✓</span> : null}
-                      Min statistik
-                    </Link>
-                  ) : null}
-                </div>
-                <div className="mt-3 grid grid-cols-1 min-[400px]:grid-cols-[minmax(0,1fr)_auto] gap-2">
-                  <label className="min-w-0">
-                    <span className="sr-only">Välj spelare</span>
-                    <select
-                      key={selectedPlayer?.userId ?? "empty"}
-                      name="spelare"
-                      aria-label="Välj spelare"
-                      defaultValue={selectedPlayer?.userId ?? ""}
-                      className="h-11 w-full rounded-xl border border-divider bg-white px-3 text-[15px] font-bold text-ink outline-none focus:border-ink"
-                    >
-                      {stats.playerStats.map((player) => (
-                        <option key={player.userId} value={player.userId}>
-                          #{player.jerseyNo ?? "–"} {player.name ?? "Okänd spelare"}
-                          {player.userId === user.id ? " (du)" : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button
-                    type="submit"
-                    className="h-11 rounded-xl bg-ink px-4 text-sm font-bold text-white transition-opacity hover:opacity-90"
-                  >
-                    Visa statistik
-                  </button>
-                </div>
-              </form>
+              <StatisticsPlayerPicker
+                players={stats.playerStats.map(({ userId, name, jerseyNo }) => ({ userId, name, jerseyNo }))}
+                selectedPlayerId={selectedPlayer?.userId ?? ""}
+                ownPlayerId={ownPlayer?.userId}
+              />
             </Card>
 
             {selectedPlayer && individualStats ? (
