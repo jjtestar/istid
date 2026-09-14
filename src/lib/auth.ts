@@ -23,7 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await prisma.user.findUnique({
           where: { email: email.trim().toLocaleLowerCase("sv-SE") },
         });
-        if (!user?.passwordHash) return null;
+        if (!user?.passwordHash || !user.isActive || !user.accessApproved) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
@@ -33,7 +33,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    authorized: async ({ auth: session }) => Boolean(session?.user),
+    authorized: async ({ auth: session }) => {
+      if (!session?.user?.email) return false;
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { isActive: true, accessApproved: true },
+      });
+      return user?.isActive === true && user.accessApproved === true;
+    },
     jwt: async ({ token, user }) => {
       if (user) token.role = (user as { role?: string }).role;
       return token;

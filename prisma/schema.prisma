@@ -43,12 +43,16 @@ model User {
   emailVerified DateTime?
   image         String?
   createdAt     DateTime   @default(now())
+  isActive      Boolean    @default(true)
+  accessApproved Boolean   @default(false)
 
   teams                 TeamMember[]
   trainingRegistrations TrainingRegistration[]
   matchRegistrations    MatchRegistration[]
   matchStats            MatchStat[]
   highlights            Highlight[]
+  createdInviteCodes    InviteCode[] @relation("InviteCreator")
+  usedInviteCode        InviteCode?  @relation("InviteUser")
 }
 
 model Team {
@@ -61,6 +65,7 @@ model Team {
   trainings  Training[]
   matches    Match[]
   highlights Highlight[]
+  inviteCodes InviteCode[]
 }
 
 model TeamMember {
@@ -162,4 +167,34 @@ model Highlight {
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([teamId, createdAt])
+}
+
+
+model InviteCode {
+  id          String    @id @default(cuid())
+  codeHash    String    @unique
+  email       String
+  teamId      String
+  createdById String
+  usedById    String?   @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  team      Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  usedBy    User? @relation("InviteUser", fields: [usedById], references: [id], onDelete: SetNull)
+
+  @@index([email, expiresAt])
+  @@index([teamId, createdAt])
+}
+
+model RegistrationAttempt {
+  id              String    @id @default(cuid())
+  keyHash         String    @unique
+  attempts        Int       @default(0)
+  windowStartedAt DateTime  @default(now())
+  blockedUntil    DateTime?
+  updatedAt       DateTime  @updatedAt
 }

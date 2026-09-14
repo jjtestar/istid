@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/app/login/LoginForm";
 import { InstallAppButton } from "@/components/PwaProvider";
@@ -27,6 +28,12 @@ export default async function LoginPage() {
         <Card className="p-5">
           <LoginForm />
         </Card>
+        <p className="mt-5 text-center text-sm text-ink-muted">
+          Har du fått en PIN-kod?{" "}
+          <Link href="/registrera" className="font-bold text-ink underline underline-offset-4">
+            Skapa konto
+          </Link>
+        </p>
         <div className="mt-4 flex justify-center"><InstallAppButton /></div>
       </div>
     </main>

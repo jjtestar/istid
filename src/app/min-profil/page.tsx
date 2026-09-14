@@ -63,6 +63,22 @@ export default async function MinProfilPage() {
           </Card>
         ) : null}
 
+        {user.role === "ADMIN" ? (
+          <Card className="border-ink bg-rink-crease p-5">
+            <Eyebrow>Administration</Eyebrow>
+            <h2 className="mt-1 section-title">Användare och PIN-koder</h2>
+            <p className="mt-2 text-sm leading-6 text-ink-subtle">
+              Bjud in nya spelare, återkalla koder och hantera åtkomst.
+            </p>
+            <Link
+              href="/admin/anvandare"
+              className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-ink px-5 text-base font-bold text-white"
+            >
+              Hantera användare
+            </Link>
+          </Card>
+        ) : null}
+
         <Card className="p-5">
           <Eyebrow>Integritet</Eyebrow>
           <h2 className="mt-1 section-title">Dina uppgifter och rättigheter</h2>

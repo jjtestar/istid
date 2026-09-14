@@ -9,7 +9,7 @@ export function LoginForm() {
   return (
     <form action={formAction} className="space-y-4">
       <label className="block">
-        <span className="mb-1.5 block text-sm font-bold text-ink">E-post</span>
+        <span className="mb-1.5 block text-sm font-bold text-ink">E-post (användarnamn)</span>
         <input
           name="email"
           type="email"
