@@ -116,10 +116,6 @@ export default async function KalenderPage({
                     kind === "training"
                       ? "Träning"
                       : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
-                  const time =
-                    kind === "training"
-                      ? `${formatTime(item.startsAt)} – ${formatTime(endTime(item.startsAt))}`
-                      : `${formatTime(item.startsAt)} – ${formatTime(endTime(item.startsAt, 120))}`;
                   const respond = kind === "training" ? respondToTraining : respondToMatch;
                   const idField = kind === "training" ? "trainingId" : "matchId";
 
@@ -135,7 +131,7 @@ export default async function KalenderPage({
                         <div className="min-w-0 flex-1">
                           <div className="text-[15px] font-bold text-ink">{title}</div>
                           <div className="mt-0.5 truncate text-[13px] text-ink-subtle">
-                            {time} · {item.location}
+                            {item.location}
                             {showTeamLabel ? ` · ${item.team.name}` : ""}
                           </div>
                         </div>

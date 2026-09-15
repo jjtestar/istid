@@ -1,6 +1,7 @@
 import { archiveTeam, assignTeamMember, createTeam, removeTeamMember, unarchiveTeam, updateTeam, updateTeamMember } from "@/app/admin/actions";
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
+import { ExpandableList } from "@/components/ExpandableList";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
@@ -41,7 +42,7 @@ export default async function AdminTeamsPage() {
             <button className="h-11 rounded-xl bg-ink px-5 font-bold text-white">Tilldela</button>
           </form>
         </Card>
-        <div className="grid gap-5 xl:grid-cols-2">
+        <ExpandableList initialCount={6} moreLabel="Visa fler lag" lessLabel="Visa färre lag" className="grid gap-5 xl:grid-cols-2">
           {teams.map((team) => (
             <Card key={team.id} className={`overflow-hidden ${team.archivedAt ? "opacity-60" : ""}`}>
               <div className="border-b border-divider p-5">
@@ -91,7 +92,7 @@ export default async function AdminTeamsPage() {
               </div>
             </Card>
           ))}
-        </div>
+        </ExpandableList>
       </main>
     </div>
   );

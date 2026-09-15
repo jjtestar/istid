@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createMatch, createPlayerRequest, createTraining, deleteMatch, deleteTraining, resolvePlayerRequest, updateMatch, updateTraining } from "@/app/admin/actions";
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
+import { ExpandableList } from "@/components/ExpandableList";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
@@ -106,7 +107,12 @@ export default async function AdminActivitiesPage() {
         <div className="grid gap-5 xl:grid-cols-2">
           <Card className="p-5">
             <h2 className="section-title">Senaste träningarna</h2>
-            <div className="mt-3 divide-y divide-divider">
+            <ExpandableList
+              initialCount={6}
+              moreLabel="Visa fler träningar"
+              lessLabel="Visa färre träningar"
+              className="mt-3 divide-y divide-divider"
+            >
               {trainings.map((t) => (
                 <details key={t.id} className="group py-3">
                   <summary className="cursor-pointer list-none">
@@ -134,11 +140,16 @@ export default async function AdminActivitiesPage() {
                   </div>
                 </details>
               ))}
-            </div>
+            </ExpandableList>
           </Card>
           <Card className="p-5">
             <h2 className="section-title">Senaste matcherna</h2>
-            <div className="mt-3 divide-y divide-divider">
+            <ExpandableList
+              initialCount={6}
+              moreLabel="Visa fler matcher"
+              lessLabel="Visa färre matcher"
+              className="mt-3 divide-y divide-divider"
+            >
               {matches.map((m) => (
                 <details key={m.id} className="group py-3">
                   <summary className="cursor-pointer list-none">
@@ -184,7 +195,7 @@ export default async function AdminActivitiesPage() {
                   </div>
                 </details>
               ))}
-            </div>
+            </ExpandableList>
           </Card>
         </div>
       </main>
