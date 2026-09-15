@@ -8,19 +8,16 @@ import { setTheme } from "./actions";
 const themes: Array<{
   id: AppTheme;
   name: string;
-  description: string;
   swatches: string[];
 }> = [
   {
     id: "classic",
-    name: "Original",
-    description: "Femtekedjans nuvarande ljusa tema.",
+    name: "Ljus",
     swatches: ["#FFFFFF", "#0D3B66", "#C1121F", "#1B7F5C"],
   },
   {
     id: "mint",
-    name: "Mörk mint",
-    description: "Mörkt grönsvart tema med mintaccent och varma detaljer.",
+    name: "Mörk",
     swatches: ["#0D1416", "#162223", "#A1E6D4", "#C9A979"],
   },
 ];
@@ -59,23 +56,24 @@ export default async function ThemesPage() {
                 }`}
               >
                 <div
-                  className="theme-preview flex h-28 items-end gap-2 p-4"
+                  className="theme-preview flex h-28 items-center justify-center gap-3 p-4"
                   style={{
                     background: theme.swatches[0],
                     borderRadius: "calc(var(--radius-card) - 4px)",
                   }}
                 >
-                  <div className="h-11 flex-1 rounded-xl" style={{ background: theme.swatches[1] }} />
-                  <div className="h-8 w-12 rounded-xl" style={{ background: theme.swatches[2] }} />
-                  <div className="h-8 w-8 rounded-full" style={{ background: theme.swatches[3] }} />
+                  {theme.swatches.slice(1).map((swatch, index) => (
+                    <span
+                      key={index}
+                      className="h-10 w-10 rounded-full shadow-sm ring-1 ring-black/10"
+                      style={{ background: swatch }}
+                    />
+                  ))}
                 </div>
-                <div className="flex items-start justify-between gap-3 px-4 py-4">
-                  <div>
-                    <p className="font-bold text-ink">{theme.name}</p>
-                    <p className="mt-1 text-sm leading-5 text-ink-muted">{theme.description}</p>
-                  </div>
+                <div className="flex items-center justify-between gap-3 px-4 py-4">
+                  <p className="font-bold text-ink">{theme.name}</p>
                   <span
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                       selected ? "border-ink bg-ink" : "border-divider"
                     }`}
                     aria-hidden="true"

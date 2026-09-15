@@ -17,7 +17,7 @@ const cards = [
 export default async function MorePage() {
   const user = await getCurrentUser();
   const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
-  const activeTheme = normalizeTheme(user.theme) === "mint" ? "Mörk mint" : "Original";
+  const activeTheme = normalizeTheme(user.theme) === "mint" ? "Mörk" : "Ljus";
 
   return (
     <div>
