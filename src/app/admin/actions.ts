@@ -89,39 +89,29 @@ export async function setPlayerTeams(formData: FormData) {
   const [user, activeTeams, currentMemberships] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
     prisma.team.findMany({ where: { archivedAt: null }, select: { id: true } }),
-    prisma.teamMember.findMany({ where: { userId, team: { archivedAt: null } }, select: { id: true, teamId: true } }),
+    prisma.teamMember.findMany({ where: { userId, team: { archivedAt: null } }, select: { id: true, teamId: true, position: true } }),
   ]);
   if (!user) return;
   const activeTeamIds = new Set(activeTeams.map((t) => t.id));
   const wantedTeamIds = [...requestedTeamIds].filter((id) => activeTeamIds.has(id));
-  const currentTeamIds = new Set(currentMemberships.map((m) => m.teamId));
-  const toAdd = wantedTeamIds.filter((id) => !currentTeamIds.has(id));
+  const currentByTeamId = new Map(currentMemberships.map((m) => [m.teamId, m]));
   const toRemove = currentMemberships.filter((m) => !requestedTeamIds.has(m.teamId));
-  if (!toAdd.length && !toRemove.length) return;
-  await prisma.$transaction([
-    ...toAdd.map((teamId) => prisma.teamMember.create({ data: { teamId, userId } })),
-    ...toRemove.map((m) => prisma.teamMember.delete({ where: { id: m.id } })),
-  ]);
+  const operations: Prisma.PrismaPromise<unknown>[] = [];
+  for (const teamId of wantedTeamIds) {
+    const requestedPosition = position(text(formData, `position:${teamId}`));
+    const existing = currentByTeamId.get(teamId);
+    if (existing) {
+      if (existing.position !== requestedPosition) {
+        operations.push(prisma.teamMember.update({ where: { id: existing.id }, data: { position: requestedPosition } }));
+      }
+    } else {
+      operations.push(prisma.teamMember.create({ data: { teamId, userId, position: requestedPosition } }));
+    }
+  }
+  for (const m of toRemove) operations.push(prisma.teamMember.delete({ where: { id: m.id } }));
+  if (!operations.length) return;
+  await prisma.$transaction(operations);
   await audit(admin.id, "Ändrade spelarens lag", "User", userId, `${wantedTeamIds.length} lag`);
-  revalidatePath("/", "layout");
-  revalidatePath("/admin/lag");
-}
-
-export async function updateTeamMember(formData: FormData) {
-  const admin = await requireAdmin();
-  const membershipId = text(formData, "membershipId");
-  const requestedPosition = position(text(formData, "position"));
-  const member = await prisma.teamMember.update({ where: { id: membershipId }, data: { position: requestedPosition } });
-  await audit(admin.id, "Ändrade spelarposition", "TeamMember", member.id, requestedPosition ?? "Ingen position");
-  revalidatePath("/admin/lag");
-  revalidatePath("/lag");
-}
-
-export async function removeTeamMember(formData: FormData) {
-  const admin = await requireAdmin();
-  const membershipId = text(formData, "membershipId");
-  const member = await prisma.teamMember.delete({ where: { id: membershipId } });
-  await audit(admin.id, "Tog bort spelare från lag", "TeamMember", member.id);
   revalidatePath("/", "layout");
   revalidatePath("/admin/lag");
 }
