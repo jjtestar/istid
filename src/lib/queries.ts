@@ -117,6 +117,15 @@ export async function getCalendarEventsForTeams(
   );
 }
 
+/** Latest admin-published information targeted at a specific team. */
+export async function getAnnouncementsForTeam(teamId: string, take = 5) {
+  return prisma.announcement.findMany({
+    where: { teams: { some: { id: teamId } } },
+    orderBy: { createdAt: "desc" },
+    take,
+  });
+}
+
 /** Unresolved "söker spelare" flags for a set of teams' still-upcoming activities. */
 export async function getActivePlayerRequests(teamIds: string[]) {
   const now = new Date();

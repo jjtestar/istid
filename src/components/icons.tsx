@@ -26,3 +26,4 @@ export function VideoIcon({ className }: IconProps) { return <svg {...base} clas
 export function ActivityIcon({ className }: IconProps) { return <svg {...base} className={className}><path d="M3 12h4l2-6 4 12 2-6h6" /></svg>; }
 export function ClipboardIcon({ className }: IconProps) { return <svg {...base} className={className}><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4.5V3h6v1.5M8.5 10h7M8.5 14h7" /></svg>; }
 export function ChevronIcon({ className, direction = "right" }: IconProps & { direction?: "left" | "right" }) { return <svg {...base} className={className}><path d={direction === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"} /></svg>; }
+export function InfoIcon({ className }: IconProps) { return <svg {...base} className={className}><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7.5v.01" /></svg>; }

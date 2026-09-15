@@ -4,7 +4,7 @@ import { InstallAppButton } from "@/components/PwaProvider";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
-import { getCalendarEvents, getGroupedTeamHighlights } from "@/lib/queries";
+import { getAnnouncementsForTeam, getCalendarEvents, getGroupedTeamHighlights } from "@/lib/queries";
 
 export default async function Home() {
   const { user, team } = await getCurrentUserWithTeam();
@@ -17,9 +17,10 @@ export default async function Home() {
     );
   }
 
-  const [historicEvents, highlightGroups] = await Promise.all([
+  const [historicEvents, highlightGroups, announcements] = await Promise.all([
     getCalendarEvents(user.id, team.id, 1, true),
     getGroupedTeamHighlights(team.id),
+    getAnnouncementsForTeam(team.id),
   ]);
   const latest = historicEvents[0] ?? null;
 
@@ -28,18 +29,30 @@ export default async function Home() {
       <PageHeader title="Hem" right={<InstallAppButton />} />
       <main className="space-y-6 px-5 pb-10">
         <Card className="overflow-hidden p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <Eyebrow tone="heading">Information</Eyebrow>
-            <div className="shrink-0 text-right">
-              <div className="text-xs font-semibold text-ink-subtle">Publicerad</div>
-              <time dateTime="2026-09-11" className="text-sm font-bold text-ink">
-                11 september 2026
-              </time>
+          <Eyebrow tone="heading">Information</Eyebrow>
+          {announcements.length > 0 ? (
+            <div className="mt-4 space-y-3">
+              {announcements.map((announcement) => (
+                <details key={announcement.id} className="group rounded-xl border border-divider bg-white/60 p-4">
+                  <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-ink">{announcement.title}</p>
+                      <p className="mt-1 line-clamp-2 body-copy text-ink-muted group-open:hidden">
+                        {announcement.body}
+                      </p>
+                      <time className="mt-1.5 block text-xs font-semibold text-ink-subtle">
+                        {formatDateHeader(announcement.createdAt)}
+                      </time>
+                    </div>
+                    <span className="shrink-0 text-xs font-bold text-signal group-open:hidden">Läs mer</span>
+                  </summary>
+                  <p className="mt-2 whitespace-pre-line body-copy text-ink-muted">{announcement.body}</p>
+                </details>
+              ))}
             </div>
-          </div>
-          <p className="mt-4 body-copy text-ink-muted">
-            Här visas viktig information från {team.name}.
-          </p>
+          ) : (
+            <p className="mt-4 body-copy text-ink-muted">Ingen information just nu.</p>
+          )}
         </Card>
 
         <Card className="p-5">

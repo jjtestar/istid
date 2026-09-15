@@ -65,6 +65,7 @@ model User {
   adminAuditLogs        AdminAuditLog[] @relation("AuditActor")
   playerRequests         PlayerRequest[] @relation("PlayerRequestCreator")
   lineupPlans            LineupPlan[]    @relation("LineupUpdater")
+  announcements          Announcement[]  @relation("AnnouncementAuthor")
 }
 
 model Team {
@@ -82,6 +83,7 @@ model Team {
   payments    Payment[]
   playerRequests PlayerRequest[]
   lineupPlans    LineupPlan[]
+  announcements  Announcement[] @relation("AnnouncementTeams")
 }
 
 model TeamMember {
@@ -234,6 +236,19 @@ model LineupPlan {
   updatedBy User      @relation("LineupUpdater", fields: [updatedById], references: [id], onDelete: Cascade)
 }
 
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  authorId  String
+  createdAt DateTime @default(now())
+
+  author User   @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  teams  Team[] @relation("AnnouncementTeams")
+
+  @@index([createdAt])
+}
 
 model InviteCode {
   id          String    @id @default(cuid())

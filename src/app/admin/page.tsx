@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ActivityIcon, ChartIcon, ClipboardIcon, PaymentIcon, ShieldIcon, TrophyIcon, UsersIcon, VideoIcon } from "@/components/icons";
+import { ActivityIcon, ChartIcon, ClipboardIcon, InfoIcon, PaymentIcon, ShieldIcon, TrophyIcon, UsersIcon, VideoIcon } from "@/components/icons";
 import { PageHeader } from "@/components/PageHeader";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 
 const modules = [
   { href: "/admin/anvandare", label: "Användare", description: "Konton, roller och PIN-koder", icon: UsersIcon },
+  { href: "/admin/information", label: "Information", description: "Publicera nyheter till valda lag", icon: InfoIcon },
   { href: "/admin/lag", label: "Lag & spelare", description: "Medlemskap och positioner", icon: ShieldIcon },
   { href: "/admin/aktiviteter", label: "Aktiviteter", description: "Matcher och träningar", icon: ActivityIcon },
   { href: "/admin/betalningar", label: "Betalningar", description: "Betald och obetald", icon: PaymentIcon },

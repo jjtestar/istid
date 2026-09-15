@@ -460,3 +460,61 @@ export async function deleteHighlight(_prev: FormState, formData: FormData): Pro
   revalidatePath("/admin/highlights");
   return { success: "Klippet togs bort." };
 }
+
+async function resolveAnnouncementTeamIds(formData: FormData) {
+  // Only current-season teams are selectable — older seasons are historical
+  // data and shouldn't receive new information.
+  const requestedTeamIds = new Set(formData.getAll("teamIds").map(String));
+  const teams = await prisma.team.findMany({
+    where: { id: { in: [...requestedTeamIds] }, archivedAt: null, season: DEFAULT_SEASON },
+    select: { id: true },
+  });
+  return teams.map((t) => t.id);
+}
+
+export async function createAnnouncement(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const title = text(formData, "title");
+  const body = text(formData, "body");
+  if (title.length < 2) return { error: "Ange en rubrik." };
+  if (body.length < 2) return { error: "Ange ett meddelande." };
+  const teamIds = await resolveAnnouncementTeamIds(formData);
+  if (teamIds.length === 0) return { error: "Välj minst ett lag." };
+  const announcement = await prisma.announcement.create({
+    data: { title, body, authorId: admin.id, teams: { connect: teamIds.map((id) => ({ id })) } },
+  });
+  await audit(admin.id, "Publicerade information", "Announcement", announcement.id, title);
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/information");
+  return { success: "Informationen publicerades." };
+}
+
+export async function updateAnnouncement(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const id = text(formData, "announcementId");
+  const title = text(formData, "title");
+  const body = text(formData, "body");
+  if (title.length < 2) return { error: "Ange en rubrik." };
+  if (body.length < 2) return { error: "Ange ett meddelande." };
+  const teamIds = await resolveAnnouncementTeamIds(formData);
+  if (teamIds.length === 0) return { error: "Välj minst ett lag." };
+  const announcement = await prisma.announcement
+    .update({ where: { id }, data: { title, body, teams: { set: teamIds.map((teamId) => ({ id: teamId })) } } })
+    .catch(() => null);
+  if (!announcement) return { error: "Informationen hittades inte." };
+  await audit(admin.id, "Ändrade information", "Announcement", announcement.id, title);
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/information");
+  return { success: "Informationen sparades." };
+}
+
+export async function deleteAnnouncement(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const id = text(formData, "announcementId");
+  const announcement = await prisma.announcement.delete({ where: { id } }).catch(() => null);
+  if (!announcement) return { error: "Informationen hittades inte." };
+  await audit(admin.id, "Tog bort information", "Announcement", announcement.id, announcement.title);
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/information");
+  return { success: "Informationen togs bort." };
+}
