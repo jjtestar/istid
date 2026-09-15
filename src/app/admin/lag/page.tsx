@@ -39,7 +39,7 @@ export default async function AdminTeamsPage() {
         <Card className="p-5">
           <Eyebrow>Medlemskap</Eyebrow>
           <h2 className="mt-1 section-title">Spelarnas lag</h2>
-          <p className="mt-2 text-sm text-ink-subtle">Välj vilket eller vilka lag varje spelare ska vara med i. Position ställs in i lagets trupp nedan.</p>
+          <p className="mt-2 text-sm text-ink-subtle">Välj vilket eller vilka lag varje spelare ska vara med i. Position ställs in i laget nedan.</p>
           <div className="mt-4 space-y-3">
             {users.map((user) => {
               const memberTeamIds = new Set(user.teams.filter((m) => !m.team.archivedAt).map((m) => m.teamId));
@@ -92,8 +92,8 @@ export default async function AdminTeamsPage() {
               </div>
               <details className="group">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-5 py-3 text-sm font-bold text-ink">
-                  <span className="group-open:hidden">Visa trupp</span>
-                  <span className="hidden group-open:inline">Dölj trupp</span>
+                  <span className="group-open:hidden">Visa lag</span>
+                  <span className="hidden group-open:inline">Dölj lag</span>
                   <span className="text-ink-subtle transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
                 </summary>
                 <div className="divide-y divide-divider border-t border-divider">

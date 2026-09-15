@@ -142,7 +142,7 @@ export function AttendanceControls({
             showLineup ? "bg-ink text-white" : "bg-transparent text-ink"
           }`}
         >
-          Trupp
+          Lag
         </button>
       </div>
 
