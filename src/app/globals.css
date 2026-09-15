@@ -113,7 +113,21 @@ body {
 .app-bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
 @media (min-width: 768px) {
-  body:has(.desktop-navigation) .app-content { min-height: 100dvh; padding-left: 15rem; }
+  /*
+   * .app-content is centered (mx-auto, from the Tailwind class in layout.tsx)
+   * within the *full* viewport. With the sidebar present that centering and
+   * the old padding-left: 15rem fought each other: the box centered as if
+   * there were no sidebar, then got pushed right by its own padding *inside*
+   * that already-centered box — wasting a chunk of width behind the sidebar
+   * and leaving an equally pointless gap on the right that grew with the
+   * screen. Anchor the box to the sidebar's right edge instead (margin-left,
+   * not padding, so it doesn't also inflate the box past max-width) and let
+   * the one remaining auto margin (from mx-auto) soak up whatever's left on
+   * the right — no separate override needed for that side.
+   */
+  body:has(.desktop-navigation) .app-content { min-height: 100dvh; margin-left: 15rem; max-width: calc(80rem - 15rem); }
+  /* Keep the decorative rink backdrop centered on the same region as the content, not the whole viewport. */
+  body:has(.desktop-navigation) .app-background { left: calc(50% + 7.5rem); }
   .app-bottom-nav { display: none; }
   .app-background { width: min(100%, 80rem); }
   .app-content main { width: 100%; padding-left: 2rem; padding-right: 2rem; }
