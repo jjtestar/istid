@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { ChevronIcon } from "@/components/icons";
 import { PageHeader } from "@/components/PageHeader";
 import { getCurrentUser } from "@/lib/current-user";
 import { normalizeTheme, type AppTheme } from "@/lib/theme";
@@ -28,15 +26,8 @@ export default async function ThemesPage() {
 
   return (
     <div>
-      <PageHeader title="Teman" />
+      <PageHeader title="Teman" back={{ href: "/mer", label: "Tillbaka till Mer" }} />
       <main className="space-y-5 px-5 pb-10">
-        <Link
-          href="/mer"
-          className="inline-flex items-center gap-1 text-sm font-bold text-ink-muted transition-colors hover:text-ink"
-        >
-          <ChevronIcon className="h-4 w-4 rotate-180" /> Tillbaka till Mer
-        </Link>
-
         <p className="text-sm text-ink-muted">
           Välj hur Femtekedjan ska se ut. Ditt val sparas på ditt konto och följer med mellan enheter.
         </p>

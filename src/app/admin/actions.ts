@@ -35,15 +35,17 @@ function calendarDate(value: string) {
 }
 function position(value: string) { return POSITIONS.has(value) ? value : null; }
 
-export async function createTeam(formData: FormData) {
+export async function createTeam(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireAdmin();
   const name = text(formData, "name");
   const season = text(formData, "season");
-  if (name.length < 2 || !/^\d{4}\/\d{2}$/.test(season)) return;
+  if (name.length < 2) return { error: "Ange ett lagnamn." };
+  if (!/^\d{4}\/\d{2}$/.test(season)) return { error: "Säsong ska skrivas som 2026/27." };
   const team = await prisma.team.create({ data: { name, season } });
   await audit(admin.id, "Skapade lag", "Team", team.id, `${name} · ${season}`);
   revalidatePath("/admin");
   revalidatePath("/admin/lag");
+  return { success: `Laget ${name} skapades.` };
 }
 
 export async function updateTeam(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -83,7 +85,7 @@ export async function unarchiveTeam(_prev: FormState, formData: FormData): Promi
   return { success: "Laget är aktivt igen." };
 }
 
-export async function setPlayerTeams(formData: FormData) {
+export async function setPlayerTeams(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireAdmin();
   const userId = text(formData, "userId");
   const requestedTeamIds = new Set(formData.getAll("teamIds").map(String));
@@ -97,7 +99,7 @@ export async function setPlayerTeams(formData: FormData) {
       select: { id: true, teamId: true, position: true },
     }),
   ]);
-  if (!user) return;
+  if (!user) return { error: "Spelaren hittades inte." };
   const activeTeamIds = new Set(activeTeams.map((t) => t.id));
   const wantedTeamIds = [...requestedTeamIds].filter((id) => activeTeamIds.has(id));
   const currentByTeamId = new Map(currentMemberships.map((m) => [m.teamId, m]));
@@ -115,11 +117,12 @@ export async function setPlayerTeams(formData: FormData) {
     }
   }
   for (const m of toRemove) operations.push(prisma.teamMember.delete({ where: { id: m.id } }));
-  if (!operations.length) return;
+  if (!operations.length) return { success: "Inga ändringar – laguppsättningen var redan sparad." };
   await prisma.$transaction(operations);
   await audit(admin.id, "Ändrade spelarens lag", "User", userId, `${wantedTeamIds.length} lag`);
   revalidatePath("/", "layout");
   revalidatePath("/admin/lag");
+  return { success: `Sparat – tillhör nu ${wantedTeamIds.length} lag.` };
 }
 
 export async function createTraining(_prev: FormState, formData: FormData): Promise<FormState> {

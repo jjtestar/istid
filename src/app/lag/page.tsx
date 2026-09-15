@@ -26,7 +26,7 @@ export default async function LagPage() {
 
   return (
     <div>
-      <PageHeader title="Laget" />
+      <PageHeader title="Laget" back={{ href: "/mer", label: "Tillbaka till Mer" }} />
       <main className="space-y-6 px-5 pb-10">
         <ContextSwitcher
           teams={context.teams}

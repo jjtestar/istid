@@ -29,7 +29,7 @@ export default async function PaymentsPage({
 
   return (
     <div>
-      <PageHeader title="Betalningar" />
+      <PageHeader title="Betalningar" back={{ href: "/mer", label: "Tillbaka till Mer" }} />
       <main className="space-y-6 px-5 pb-10">
         <Card className="p-5">
           <Eyebrow>Översikt</Eyebrow>

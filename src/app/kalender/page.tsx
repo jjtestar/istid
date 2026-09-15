@@ -65,7 +65,7 @@ export default async function KalenderPage({
 
   return (
     <div>
-      <PageHeader title="Kalender" />
+      <PageHeader title="Kalender" back={{ href: "/mer", label: "Tillbaka till Mer" }} />
 
       <main className="space-y-7 px-5 pb-10">
         {availableSeasons.length > 1 ? (

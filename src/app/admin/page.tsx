@@ -25,7 +25,7 @@ export default async function AdminPage() {
 
   return (
     <div>
-      <PageHeader title="Administration" />
+      <PageHeader title="Administration" back={{ href: "/mer", label: "Tillbaka till Mer" }} />
       <main className="space-y-6 px-5 pb-10">
         <section className="grid grid-cols-3 gap-3">
           <div className="rounded-2xl border border-divider bg-white p-4"><p className="text-2xl font-bold">{users}</p><p className="text-xs text-ink-subtle">aktiva konton</p></div>

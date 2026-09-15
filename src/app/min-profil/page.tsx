@@ -14,7 +14,7 @@ export default async function MinProfilPage() {
 
   return (
     <div>
-      <PageHeader title="Min profil" right={<InstallAppButton />} />
+      <PageHeader title="Min profil" back={{ href: "/mer", label: "Tillbaka till Mer" }} right={<InstallAppButton />} />
       <main className="space-y-6 px-5 pb-10">
         <Card className="p-5">
           <Eyebrow>Kontouppgifter</Eyebrow>

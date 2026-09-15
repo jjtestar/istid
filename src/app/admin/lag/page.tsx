@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { archiveTeam, createTeam, setPlayerTeams, unarchiveTeam, updateTeam } from "@/app/admin/actions";
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
@@ -23,6 +24,8 @@ export default async function AdminTeamsPage() {
         id: true,
         name: true,
         email: true,
+        role: true,
+        isSuperAdmin: true,
         teams: { select: { teamId: true, position: true, team: { select: { archivedAt: true, name: true, season: true } } } },
       },
     }),
@@ -39,11 +42,15 @@ export default async function AdminTeamsPage() {
         <Card className="p-5">
           <Eyebrow>Nytt lag</Eyebrow>
           <h2 className="mt-1 section-title">Skapa lag</h2>
-          <form action={createTeam} className="mt-4 grid gap-3 sm:grid-cols-[1fr_10rem_auto]">
+          <AdminForm
+            action={createTeam}
+            submitLabel="Skapa"
+            className="mt-4 grid gap-3 sm:grid-cols-[1fr_10rem_auto]"
+            submitClassName="h-11 rounded-xl bg-ink px-5 font-bold text-white disabled:opacity-60"
+          >
             <input name="name" required placeholder="Lagnamn" className={field} />
             <input name="season" required pattern="\d{4}/\d{2}" placeholder="2026/27" className={field} />
-            <button className="h-11 rounded-xl bg-ink px-5 font-bold text-white">Skapa</button>
-          </form>
+          </AdminForm>
         </Card>
         <Card className="p-5">
           <Eyebrow>Medlemskap</Eyebrow>
@@ -58,6 +65,7 @@ export default async function AdminTeamsPage() {
               const summary = memberships.length
                 ? memberships.map((m) => `${m.team.name}${m.position ? ` (${m.position})` : ""}`).join(", ")
                 : "Inget lag";
+              const isAdminUser = user.role === "ADMIN" || user.isSuperAdmin;
               return (
                 <details key={user.id} className="group">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-3">
@@ -67,7 +75,22 @@ export default async function AdminTeamsPage() {
                     </span>
                     <span className="text-ink-subtle transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
                   </summary>
-                  <form action={setPlayerTeams} className="space-y-2 pb-4">
+                  {isAdminUser ? (
+                    <p className="mb-2 rounded-xl bg-rink-line-red px-3 py-2.5 text-sm font-semibold text-signal">
+                      {user.isSuperAdmin ? "Huvudadmin" : "Admin"} – ser och kan hantera alla lag oavsett vad som är
+                      ikryssat nedan. Ändra rollen under{" "}
+                      <Link href="/admin/anvandare" className="underline underline-offset-2">
+                        Användare
+                      </Link>{" "}
+                      om åtkomsten ska begränsas till valda lag.
+                    </p>
+                  ) : null}
+                  <AdminForm
+                    action={setPlayerTeams}
+                    submitLabel="Spara"
+                    className="space-y-2 pb-4"
+                    submitClassName="h-10 rounded-xl border border-ink px-4 text-sm font-bold disabled:opacity-60"
+                  >
                     <input type="hidden" name="userId" value={user.id} />
                     {assignableTeams.map((team) => {
                       const membership = memberships.find((m) => m.teamId === team.id);
@@ -86,8 +109,7 @@ export default async function AdminTeamsPage() {
                         </div>
                       );
                     })}
-                    <button className="h-10 rounded-xl border border-ink px-4 text-sm font-bold">Spara</button>
-                  </form>
+                  </AdminForm>
                 </details>
               );
             })}
