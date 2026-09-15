@@ -82,22 +82,27 @@ export async function unarchiveTeam(_prev: FormState, formData: FormData): Promi
   return { success: "Laget är aktivt igen." };
 }
 
-export async function assignTeamMember(formData: FormData) {
+export async function setPlayerTeams(formData: FormData) {
   const admin = await requireAdmin();
-  const teamId = text(formData, "teamId");
   const userId = text(formData, "userId");
-  const requestedPosition = position(text(formData, "position"));
-  const [team, user] = await Promise.all([
-    prisma.team.findUnique({ where: { id: teamId }, select: { id: true } }),
+  const requestedTeamIds = new Set(formData.getAll("teamIds").map(String));
+  const [user, activeTeams, currentMemberships] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
+    prisma.team.findMany({ where: { archivedAt: null }, select: { id: true } }),
+    prisma.teamMember.findMany({ where: { userId, team: { archivedAt: null } }, select: { id: true, teamId: true } }),
   ]);
-  if (!team || !user) return;
-  const member = await prisma.teamMember.upsert({
-    where: { teamId_userId: { teamId, userId } },
-    update: { position: requestedPosition },
-    create: { teamId, userId, position: requestedPosition },
-  });
-  await audit(admin.id, "Tilldelade spelare till lag", "TeamMember", member.id);
+  if (!user) return;
+  const activeTeamIds = new Set(activeTeams.map((t) => t.id));
+  const wantedTeamIds = [...requestedTeamIds].filter((id) => activeTeamIds.has(id));
+  const currentTeamIds = new Set(currentMemberships.map((m) => m.teamId));
+  const toAdd = wantedTeamIds.filter((id) => !currentTeamIds.has(id));
+  const toRemove = currentMemberships.filter((m) => !requestedTeamIds.has(m.teamId));
+  if (!toAdd.length && !toRemove.length) return;
+  await prisma.$transaction([
+    ...toAdd.map((teamId) => prisma.teamMember.create({ data: { teamId, userId } })),
+    ...toRemove.map((m) => prisma.teamMember.delete({ where: { id: m.id } })),
+  ]);
+  await audit(admin.id, "Ändrade spelarens lag", "User", userId, `${wantedTeamIds.length} lag`);
   revalidatePath("/", "layout");
   revalidatePath("/admin/lag");
 }

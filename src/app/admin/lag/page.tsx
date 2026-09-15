@@ -1,4 +1,4 @@
-import { archiveTeam, assignTeamMember, createTeam, removeTeamMember, unarchiveTeam, updateTeam, updateTeamMember } from "@/app/admin/actions";
+import { archiveTeam, createTeam, removeTeamMember, setPlayerTeams, unarchiveTeam, updateTeam, updateTeamMember } from "@/app/admin/actions";
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
 import { ExpandableList } from "@/components/ExpandableList";
@@ -15,7 +15,11 @@ export default async function AdminTeamsPage() {
       orderBy: [{ archivedAt: "asc" }, { season: "desc" }, { name: "asc" }],
       include: { members: { orderBy: { user: { name: "asc" } }, include: { user: { select: { id: true, name: true, email: true, isActive: true } } } } },
     }),
-    prisma.user.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true } }),
+    prisma.user.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, email: true, teams: { select: { teamId: true, team: { select: { archivedAt: true } } } } },
+    }),
   ]);
   const activeTeams = teams.filter((t) => !t.archivedAt);
 
@@ -34,13 +38,28 @@ export default async function AdminTeamsPage() {
         </Card>
         <Card className="p-5">
           <Eyebrow>Medlemskap</Eyebrow>
-          <h2 className="mt-1 section-title">Tilldela spelare</h2>
-          <form action={assignTeamMember} className="mt-4 grid gap-3 lg:grid-cols-4">
-            <select name="userId" required className={field}>{users.map((u) => <option key={u.id} value={u.id}>{u.name ?? u.email}</option>)}</select>
-            <select name="teamId" required className={field}>{activeTeams.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.season}</option>)}</select>
-            <select name="position" className={field}><option value="">Ingen position</option><option>Forward</option><option>Back</option><option>Målvakt</option></select>
-            <button className="h-11 rounded-xl bg-ink px-5 font-bold text-white">Tilldela</button>
-          </form>
+          <h2 className="mt-1 section-title">Spelarnas lag</h2>
+          <p className="mt-2 text-sm text-ink-subtle">Välj vilket eller vilka lag varje spelare ska vara med i. Position ställs in i lagets trupp nedan.</p>
+          <div className="mt-4 space-y-3">
+            {users.map((user) => {
+              const memberTeamIds = new Set(user.teams.filter((m) => !m.team.archivedAt).map((m) => m.teamId));
+              return (
+                <form key={user.id} action={setPlayerTeams} className="rounded-xl border border-divider p-4">
+                  <input type="hidden" name="userId" value={user.id} />
+                  <p className="font-bold">{user.name ?? user.email}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {activeTeams.map((team) => (
+                      <label key={team.id} className="flex items-center gap-2 rounded-xl border border-divider px-3 py-2 text-sm has-[:checked]:border-ink has-[:checked]:bg-rink-crease">
+                        <input type="checkbox" name="teamIds" value={team.id} defaultChecked={memberTeamIds.has(team.id)} className="h-4 w-4" />
+                        {team.name} · {team.season}
+                      </label>
+                    ))}
+                  </div>
+                  <button className="mt-3 h-10 rounded-xl border border-ink px-4 text-sm font-bold">Spara lag</button>
+                </form>
+              );
+            })}
+          </div>
         </Card>
         <ExpandableList initialCount={6} moreLabel="Visa fler lag" lessLabel="Visa färre lag" className="grid gap-5 xl:grid-cols-2">
           {teams.map((team) => (
