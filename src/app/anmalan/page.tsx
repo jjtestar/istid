@@ -94,29 +94,36 @@ export default async function AnmalanPage() {
 
           return (
             <Card key={`${kind}:${item.id}`} className="overflow-hidden p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <Eyebrow tone="heading">{isTraining ? "Nästa träning" : "Nästa match"}</Eyebrow>
-                <span className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
-                  {team.name}
-                </span>
-              </div>
-              <div className="mt-4 flex gap-4">
-                <div className="flex w-[72px] shrink-0 flex-col items-center justify-center rounded-xl border border-divider bg-white/80 px-2 py-3 text-center">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-subtle">
+              <div className="flex items-start gap-3">
+                <div className="flex w-12 shrink-0 flex-col items-center justify-center rounded-xl border border-divider bg-white/80 py-1.5 text-center">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
                     {formatDateHeader(item.startsAt).slice(0, 3)}
                   </span>
-                  <span className="text-[34px] font-bold leading-none text-ink">{item.startsAt.getDate()}</span>
+                  <span className="text-lg font-bold leading-none text-ink">{item.startsAt.getDate()}</span>
                 </div>
-                <div className="min-w-0 flex-1 self-center">
-                  <h2 className="section-title">{title}</h2>
-                  <p className="mt-2 text-sm font-semibold text-ink-muted">
-                    {formatDateHeader(item.startsAt)} · {formatTime(item.startsAt)}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+                    <Eyebrow tone="heading">{isTraining ? "Nästa träning" : "Nästa match"}</Eyebrow>
+                    <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
+                      {team.name}
+                    </span>
+                  </div>
+                  <h2 className="mt-0.5 text-base font-bold text-ink">{title}</h2>
+                  <p className="mt-0.5 text-sm text-ink-subtle">
+                    {formatDateHeader(item.startsAt)} · {formatTime(item.startsAt)} · {item.location}
                   </p>
-                  <p className="mt-1 text-sm text-ink-subtle">{item.location}</p>
                 </div>
               </div>
-              {lineupPlanData ? <LineupView data={lineupPlanData} namesById={namesById} /> : null}
-              <div className="mt-4 border-t border-divider pt-4">
+              {lineupPlanData ? (
+                <details className="group mt-3 rounded-xl border border-divider bg-white/60 px-3 py-2">
+                  <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-ink">
+                    Visa lagindelning
+                    <span className="text-ink-subtle transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
+                  </summary>
+                  <LineupView data={lineupPlanData} namesById={namesById} />
+                </details>
+              ) : null}
+              <div className="mt-3 border-t border-divider pt-3">
                 <AttendanceControls
                   formAction={respond}
                   idField={idField}

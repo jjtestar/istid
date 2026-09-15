@@ -71,25 +71,32 @@ export default async function AdminTeamsPage() {
                   </div>
                 </details>
               </div>
-              <div className="divide-y divide-divider">
-                {team.members.length ? team.members.map((member) => (
-                  <div key={member.id} className="p-4">
-                    <p className="font-bold">{member.user.name ?? "Namnlös"}</p>
-                    <p className="text-sm text-ink-subtle">{member.user.email}</p>
-                    <div className="mt-3 flex gap-2">
-                      <form action={updateTeamMember} className="flex min-w-0 flex-1 gap-2">
-                        <input type="hidden" name="membershipId" value={member.id} />
-                        <select name="position" defaultValue={member.position ?? ""} className={field}><option value="">Ingen position</option><option>Forward</option><option>Back</option><option>Målvakt</option></select>
-                        <button className="rounded-xl border border-ink px-3 text-sm font-bold">Spara</button>
-                      </form>
-                      <form action={removeTeamMember}>
-                        <input type="hidden" name="membershipId" value={member.id} />
-                        <button className="h-11 rounded-xl border border-divider px-3 text-sm font-bold text-signal">Ta bort</button>
-                      </form>
+              <details className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-5 py-3 text-sm font-bold text-ink">
+                  <span className="group-open:hidden">Visa trupp</span>
+                  <span className="hidden group-open:inline">Dölj trupp</span>
+                  <span className="text-ink-subtle transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
+                </summary>
+                <div className="divide-y divide-divider border-t border-divider">
+                  {team.members.length ? team.members.map((member) => (
+                    <div key={member.id} className="p-4">
+                      <p className="font-bold">{member.user.name ?? "Namnlös"}</p>
+                      <p className="text-sm text-ink-subtle">{member.user.email}</p>
+                      <div className="mt-3 flex gap-2">
+                        <form action={updateTeamMember} className="flex min-w-0 flex-1 gap-2">
+                          <input type="hidden" name="membershipId" value={member.id} />
+                          <select name="position" defaultValue={member.position ?? ""} className={field}><option value="">Ingen position</option><option>Forward</option><option>Back</option><option>Målvakt</option></select>
+                          <button className="rounded-xl border border-ink px-3 text-sm font-bold">Spara</button>
+                        </form>
+                        <form action={removeTeamMember}>
+                          <input type="hidden" name="membershipId" value={member.id} />
+                          <button className="h-11 rounded-xl border border-divider px-3 text-sm font-bold text-signal">Ta bort</button>
+                        </form>
+                      </div>
                     </div>
-                  </div>
-                )) : <p className="p-5 text-sm text-ink-subtle">Inga spelare i laget.</p>}
-              </div>
+                  )) : <p className="p-5 text-sm text-ink-subtle">Inga spelare i laget.</p>}
+                </div>
+              </details>
             </Card>
           ))}
         </ExpandableList>

@@ -100,7 +100,7 @@ export function AttendanceControls({
 
   return (
     <div className="w-full">
-      <div className="grid min-h-11 grid-cols-2 min-[400px]:grid-cols-3 overflow-hidden rounded-xl border-2 border-ink">
+      <div className="grid min-h-11 grid-cols-3 overflow-hidden rounded-xl border-2 border-ink">
         <form action={formAction} className="contents" onSubmit={() => setShowReasons(false)}>
           <input type="hidden" name={idField} value={idValue} />
           <input type="hidden" name="status" value="GOING" />
@@ -122,7 +122,7 @@ export function AttendanceControls({
             setShowReasons((visible) => !visible);
             setShowLineup(false);
           }}
-          className={`min-h-11 min-[400px]:border-r border-ink px-2 text-[13px] font-bold uppercase tracking-wide transition-colors ${
+          className={`min-h-11 border-r border-ink px-2 text-[13px] font-bold uppercase tracking-wide transition-colors ${
             status === "NOT_GOING" ? "bg-ink text-white" : "bg-transparent text-ink"
           }`}
         >
@@ -133,15 +133,16 @@ export function AttendanceControls({
           type="button"
           aria-expanded={showLineup}
           aria-controls={lineupTitleId}
+          aria-label="Laguppställning"
           onClick={() => {
             setShowLineup((visible) => !visible);
             setShowReasons(false);
           }}
-          className={`col-span-2 min-h-11 border-t border-ink min-[400px]:col-span-1 min-[400px]:border-t-0 px-2 text-[12px] font-bold uppercase tracking-[0.04em] transition-colors ${
+          className={`min-h-11 px-2 text-[13px] font-bold uppercase tracking-wide transition-colors ${
             showLineup ? "bg-ink text-white" : "bg-transparent text-ink"
           }`}
         >
-          Laguppställning
+          Trupp
         </button>
       </div>
 
