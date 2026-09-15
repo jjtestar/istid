@@ -137,6 +137,8 @@ export default async function KalenderPage({
                         </div>
                         {going ? (
                           <StatusLabel tone="success">Anmäld</StatusLabel>
+                        ) : isHistoric ? (
+                          <StatusLabel tone="muted">Ej anmäld</StatusLabel>
                         ) : (
                           <form action={respond}>
                             <input type="hidden" name={idField} value={item.id} />

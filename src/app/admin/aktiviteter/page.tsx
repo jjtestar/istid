@@ -5,6 +5,7 @@ import { AdminHeader } from "@/components/AdminHeader";
 import { ExpandableList } from "@/components/ExpandableList";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
+import { DEFAULT_SEASON } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
@@ -65,7 +66,8 @@ function PlayerRequestSection({
 export default async function AdminActivitiesPage() {
   await requireAdmin();
   const [teams, trainings, matches] = await Promise.all([
-    prisma.team.findMany({ where: { archivedAt: null }, orderBy: [{ season: "desc" }, { name: "asc" }] }),
+    // Only current-season teams can get new trainings/matches — older seasons are historical data only.
+    prisma.team.findMany({ where: { archivedAt: null, season: DEFAULT_SEASON }, orderBy: { name: "asc" } }),
     prisma.training.findMany({ orderBy: { startsAt: "desc" }, take: 30, include: { team: true, playerRequests: { where: { resolvedAt: null } } } }),
     prisma.match.findMany({ orderBy: { startsAt: "desc" }, take: 30, include: { team: true, playerRequests: { where: { resolvedAt: null } } } }),
   ]);

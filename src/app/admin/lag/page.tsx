@@ -4,6 +4,7 @@ import { AdminHeader } from "@/components/AdminHeader";
 import { ExpandableList } from "@/components/ExpandableList";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
+import { DEFAULT_SEASON } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
@@ -27,6 +28,9 @@ export default async function AdminTeamsPage() {
     }),
   ]);
   const activeTeams = teams.filter((t) => !t.archivedAt);
+  // Only the current season's teams can be assigned to players — older seasons
+  // are historical data and their rosters must stay frozen.
+  const assignableTeams = activeTeams.filter((t) => t.season === DEFAULT_SEASON);
 
   return (
     <div>
@@ -44,7 +48,10 @@ export default async function AdminTeamsPage() {
         <Card className="p-5">
           <Eyebrow>Medlemskap</Eyebrow>
           <h2 className="mt-1 section-title">Spelare</h2>
-          <p className="mt-2 text-sm text-ink-subtle">Klicka på en spelare för att välja lag och position.</p>
+          <p className="mt-2 text-sm text-ink-subtle">
+            Klicka på en spelare för att välja lag och position för säsongen {DEFAULT_SEASON}. Äldre säsonger
+            är historisk data och går inte att ändra här.
+          </p>
           <div className="mt-4 divide-y divide-divider">
             {users.map((user) => {
               const memberships = user.teams.filter((m) => !m.team.archivedAt);
@@ -62,7 +69,7 @@ export default async function AdminTeamsPage() {
                   </summary>
                   <form action={setPlayerTeams} className="space-y-2 pb-4">
                     <input type="hidden" name="userId" value={user.id} />
-                    {activeTeams.map((team) => {
+                    {assignableTeams.map((team) => {
                       const membership = memberships.find((m) => m.teamId === team.id);
                       return (
                         <div key={team.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-divider px-3 py-2 has-[:checked]:border-ink has-[:checked]:bg-rink-crease">

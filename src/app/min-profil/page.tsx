@@ -4,8 +4,10 @@ import { PlayerDetailsForm } from "@/components/PlayerDetailsForm";
 import { SeasonParticipationForm } from "@/components/SeasonParticipationForm";
 import { Card, Eyebrow } from "@/components/ui";
 import { signOut } from "@/lib/auth";
-import { getCurrentUserWithTeam } from "@/lib/current-user";
+import { DEFAULT_SEASON, getCurrentUserWithTeam } from "@/lib/current-user";
 import Link from "next/link";
+
+const trainingDayLabels = { TUESDAY: "tisdag", THURSDAY: "torsdag", SATURDAY: "lördag" } as const;
 
 export default async function MinProfilPage() {
   const { user, team, membership } = await getCurrentUserWithTeam();
@@ -47,7 +49,7 @@ export default async function MinProfilPage() {
           />
         </Card>
 
-        {team && membership ? (
+        {team && membership && team.season === DEFAULT_SEASON ? (
           <Card className="p-5">
             <Eyebrow>Säsongen {team.season}</Eyebrow>
             <h2 className="mt-1 section-title">Hur deltar du den här säsongen?</h2>
@@ -60,6 +62,26 @@ export default async function MinProfilPage() {
               initialParticipatesInMatches={membership.participatesInMatches}
               initialTrainingDays={membership.trainingDays}
             />
+          </Card>
+        ) : team && membership ? (
+          <Card className="p-5">
+            <Eyebrow>Säsongen {team.season} · Avslutad</Eyebrow>
+            <h2 className="mt-1 section-title">Historiskt deltagande</h2>
+            <p className="mt-2 text-sm leading-6 text-ink-subtle">
+              {membership.playingThisSeason === true
+                ? membership.participatesInMatches === false
+                  ? "Bara träningar"
+                  : "Träningar och matcher"
+                : membership.playingThisSeason === false
+                  ? "Spelade inte säsongen"
+                  : "Inget svar lämnades för säsongen"}
+              {membership.playingThisSeason === true && membership.trainingDays.length > 0
+                ? ` · Tränade ${membership.trainingDays.map((day) => trainingDayLabels[day]).join(", ")}`
+                : ""}
+            </p>
+            <p className="mt-3 text-[13px] leading-5 text-ink-subtle">
+              Säsongen är avslutad och går inte längre att ändra.
+            </p>
           </Card>
         ) : null}
 

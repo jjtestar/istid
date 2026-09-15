@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { getCurrentUser, getCurrentUserWithTeam, teamSlug } from "@/lib/current-user";
+import { DEFAULT_SEASON, getCurrentUser, getCurrentUserWithTeam, teamSlug } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 const RSVP_STATUSES = new Set(["GOING", "NOT_GOING"]);
@@ -54,11 +54,12 @@ export async function respondToTraining(formData: FormData) {
   const response = getResponse(formData);
   if (!trainingId || !response) return;
   const user = await getCurrentUser();
-  const allowed = user.role === "ADMIN" || user.isSuperAdmin || Boolean(await prisma.training.findFirst({
-    where: { id: trainingId, team: { members: { some: { userId: user.id } } } },
-    select: { id: true },
-  }));
-  if (!allowed) return;
+  const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
+  const training = await prisma.training.findFirst({
+    where: { id: trainingId, ...(isAdmin ? {} : { team: { members: { some: { userId: user.id } } } }) },
+    select: { team: { select: { season: true } } },
+  });
+  if (!training || training.team.season !== DEFAULT_SEASON) return;
 
   await prisma.trainingRegistration.upsert({
     where: { trainingId_userId: { trainingId, userId: user.id } },
@@ -76,11 +77,12 @@ export async function respondToMatch(formData: FormData) {
   const response = getResponse(formData);
   if (!matchId || !response) return;
   const user = await getCurrentUser();
-  const allowed = user.role === "ADMIN" || user.isSuperAdmin || Boolean(await prisma.match.findFirst({
-    where: { id: matchId, team: { members: { some: { userId: user.id } } } },
-    select: { id: true },
-  }));
-  if (!allowed) return;
+  const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
+  const match = await prisma.match.findFirst({
+    where: { id: matchId, ...(isAdmin ? {} : { team: { members: { some: { userId: user.id } } } }) },
+    select: { team: { select: { season: true } } },
+  });
+  if (!match || match.team.season !== DEFAULT_SEASON) return;
 
   await prisma.matchRegistration.upsert({
     where: { matchId_userId: { matchId, userId: user.id } },
@@ -146,10 +148,11 @@ export async function updatePlayerDetails(formData: FormData) {
 }
 
 export async function updateSeasonParticipation(formData: FormData) {
-  const { membership } = await getCurrentUserWithTeam();
+  const { team, membership } = await getCurrentUserWithTeam();
   const response = String(formData.get("playingThisSeason") ?? "");
 
-  if (!membership || (response !== "yes" && response !== "no")) return false;
+  if (!membership || !team || team.season !== DEFAULT_SEASON) return false;
+  if (response !== "yes" && response !== "no") return false;
 
   if (response === "no") {
     await prisma.teamMember.update({

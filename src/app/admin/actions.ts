@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { audit, requireAdmin } from "@/lib/admin";
+import { DEFAULT_SEASON } from "@/lib/current-user";
 import { isValidLineupData } from "@/lib/lineup";
 import { prisma } from "@/lib/prisma";
 
@@ -86,10 +87,15 @@ export async function setPlayerTeams(formData: FormData) {
   const admin = await requireAdmin();
   const userId = text(formData, "userId");
   const requestedTeamIds = new Set(formData.getAll("teamIds").map(String));
+  // Scoped to the current season only: historic seasons are read-only data and
+  // their team memberships must never be touched by this form.
   const [user, activeTeams, currentMemberships] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
-    prisma.team.findMany({ where: { archivedAt: null }, select: { id: true } }),
-    prisma.teamMember.findMany({ where: { userId, team: { archivedAt: null } }, select: { id: true, teamId: true, position: true } }),
+    prisma.team.findMany({ where: { archivedAt: null, season: DEFAULT_SEASON }, select: { id: true } }),
+    prisma.teamMember.findMany({
+      where: { userId, team: { archivedAt: null, season: DEFAULT_SEASON } },
+      select: { id: true, teamId: true, position: true },
+    }),
   ]);
   if (!user) return;
   const activeTeamIds = new Set(activeTeams.map((t) => t.id));
@@ -124,7 +130,9 @@ export async function createTraining(_prev: FormState, formData: FormData): Prom
   const notes = text(formData, "notes");
   if (!startsAt) return { error: "Ange ett giltigt datum och tid." };
   if (!location) return { error: "Ange en plats." };
-  if (!(await prisma.team.findUnique({ where: { id: teamId }, select: { id: true } }))) return { error: "Laget hittades inte." };
+  const team = await prisma.team.findUnique({ where: { id: teamId }, select: { id: true, season: true } });
+  if (!team) return { error: "Laget hittades inte." };
+  if (team.season !== DEFAULT_SEASON) return { error: "Går inte att skapa träningar för en avslutad säsong." };
   const training = await prisma.training.create({ data: { teamId, startsAt, location, notes: notes || null } });
   await audit(admin.id, "Skapade träning", "Training", training.id);
   revalidatePath("/", "layout");
@@ -169,7 +177,9 @@ export async function createMatch(_prev: FormState, formData: FormData): Promise
   if (!startsAt) return { error: "Ange ett giltigt datum och tid." };
   if (!opponent) return { error: "Ange motståndare." };
   if (!location) return { error: "Ange en plats." };
-  if (!(await prisma.team.findUnique({ where: { id: teamId }, select: { id: true } }))) return { error: "Laget hittades inte." };
+  const team = await prisma.team.findUnique({ where: { id: teamId }, select: { id: true, season: true } });
+  if (!team) return { error: "Laget hittades inte." };
+  if (team.season !== DEFAULT_SEASON) return { error: "Går inte att skapa matcher för en avslutad säsong." };
   const match = await prisma.match.create({ data: { teamId, startsAt, opponent, location, isHome } });
   await audit(admin.id, "Skapade match", "Match", match.id, opponent);
   revalidatePath("/", "layout");
