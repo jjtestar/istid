@@ -1,4 +1,4 @@
-import { archiveTeam, createTeam, removeTeamMember, setPlayerTeams, unarchiveTeam, updateTeam, updateTeamMember } from "@/app/admin/actions";
+import { archiveTeam, createTeam, setPlayerTeams, unarchiveTeam, updateTeam } from "@/app/admin/actions";
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
 import { ExpandableList } from "@/components/ExpandableList";
@@ -18,7 +18,12 @@ export default async function AdminTeamsPage() {
     prisma.user.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, email: true, teams: { select: { teamId: true, team: { select: { archivedAt: true } } } } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        teams: { select: { teamId: true, position: true, team: { select: { archivedAt: true, name: true, season: true } } } },
+      },
     }),
   ]);
   const activeTeams = teams.filter((t) => !t.archivedAt);
@@ -38,25 +43,45 @@ export default async function AdminTeamsPage() {
         </Card>
         <Card className="p-5">
           <Eyebrow>Medlemskap</Eyebrow>
-          <h2 className="mt-1 section-title">Spelarnas lag</h2>
-          <p className="mt-2 text-sm text-ink-subtle">Välj vilket eller vilka lag varje spelare ska vara med i. Position ställs in i laget nedan.</p>
-          <div className="mt-4 space-y-3">
+          <h2 className="mt-1 section-title">Spelare</h2>
+          <p className="mt-2 text-sm text-ink-subtle">Klicka på en spelare för att välja lag och position.</p>
+          <div className="mt-4 divide-y divide-divider">
             {users.map((user) => {
-              const memberTeamIds = new Set(user.teams.filter((m) => !m.team.archivedAt).map((m) => m.teamId));
+              const memberships = user.teams.filter((m) => !m.team.archivedAt);
+              const summary = memberships.length
+                ? memberships.map((m) => `${m.team.name}${m.position ? ` (${m.position})` : ""}`).join(", ")
+                : "Inget lag";
               return (
-                <form key={user.id} action={setPlayerTeams} className="rounded-xl border border-divider p-4">
-                  <input type="hidden" name="userId" value={user.id} />
-                  <p className="font-bold">{user.name ?? user.email}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {activeTeams.map((team) => (
-                      <label key={team.id} className="flex items-center gap-2 rounded-xl border border-divider px-3 py-2 text-sm has-[:checked]:border-ink has-[:checked]:bg-rink-crease">
-                        <input type="checkbox" name="teamIds" value={team.id} defaultChecked={memberTeamIds.has(team.id)} className="h-4 w-4" />
-                        {team.name} · {team.season}
-                      </label>
-                    ))}
-                  </div>
-                  <button className="mt-3 h-10 rounded-xl border border-ink px-4 text-sm font-bold">Spara lag</button>
-                </form>
+                <details key={user.id} className="group">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-3">
+                    <span>
+                      <span className="font-bold">{user.name ?? user.email}</span>
+                      <span className="block text-sm text-ink-subtle">{summary}</span>
+                    </span>
+                    <span className="text-ink-subtle transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
+                  </summary>
+                  <form action={setPlayerTeams} className="space-y-2 pb-4">
+                    <input type="hidden" name="userId" value={user.id} />
+                    {activeTeams.map((team) => {
+                      const membership = memberships.find((m) => m.teamId === team.id);
+                      return (
+                        <div key={team.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-divider px-3 py-2 has-[:checked]:border-ink has-[:checked]:bg-rink-crease">
+                          <label className="flex min-w-[10rem] flex-1 items-center gap-2 text-sm">
+                            <input type="checkbox" name="teamIds" value={team.id} defaultChecked={Boolean(membership)} className="h-4 w-4" />
+                            {team.name} · {team.season}
+                          </label>
+                          <select name={`position:${team.id}`} defaultValue={membership?.position ?? ""} className="h-10 rounded-lg border border-divider bg-white px-2 text-sm">
+                            <option value="">Ingen position</option>
+                            <option>Forward</option>
+                            <option>Back</option>
+                            <option>Målvakt</option>
+                          </select>
+                        </div>
+                      );
+                    })}
+                    <button className="h-10 rounded-xl border border-ink px-4 text-sm font-bold">Spara</button>
+                  </form>
+                </details>
               );
             })}
           </div>
@@ -98,22 +123,14 @@ export default async function AdminTeamsPage() {
                 </summary>
                 <div className="divide-y divide-divider border-t border-divider">
                   {team.members.length ? team.members.map((member) => (
-                    <div key={member.id} className="p-4">
-                      <p className="font-bold">{member.user.name ?? "Namnlös"}</p>
-                      <p className="text-sm text-ink-subtle">{member.user.email}</p>
-                      <div className="mt-3 flex gap-2">
-                        <form action={updateTeamMember} className="flex min-w-0 flex-1 gap-2">
-                          <input type="hidden" name="membershipId" value={member.id} />
-                          <select name="position" defaultValue={member.position ?? ""} className={field}><option value="">Ingen position</option><option>Forward</option><option>Back</option><option>Målvakt</option></select>
-                          <button className="rounded-xl border border-ink px-3 text-sm font-bold">Spara</button>
-                        </form>
-                        <form action={removeTeamMember}>
-                          <input type="hidden" name="membershipId" value={member.id} />
-                          <button className="h-11 rounded-xl border border-divider px-3 text-sm font-bold text-signal">Ta bort</button>
-                        </form>
+                    <div key={member.id} className="flex items-center justify-between gap-3 p-4">
+                      <div>
+                        <p className="font-bold">{member.user.name ?? "Namnlös"}</p>
+                        <p className="text-sm text-ink-subtle">{member.user.email}</p>
                       </div>
+                      <span className="shrink-0 rounded-lg bg-rink-crease px-2 py-1 text-xs font-bold text-ink-subtle">{member.position ?? "Ingen position"}</span>
                     </div>
-                  )) : <p className="p-5 text-sm text-ink-subtle">Inga spelare i laget.</p>}
+                  )) : <p className="p-5 text-sm text-ink-subtle">Inga spelare i laget. Lägg till dem under &quot;Spelare&quot; ovan.</p>}
                 </div>
               </details>
             </Card>
