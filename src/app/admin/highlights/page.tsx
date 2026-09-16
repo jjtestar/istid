@@ -1,7 +1,7 @@
 import { createHighlight, deleteHighlight } from "@/app/admin/actions";
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
-import { TeamOptionalActivitySelect } from "@/components/admin/CascadingSelects";
+import { TeamHighlightFields } from "@/components/admin/CascadingSelects";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
@@ -9,16 +9,40 @@ import { prisma } from "@/lib/prisma";
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
 const date = (value: Date) => new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium" }).format(value);
 
+const HIGHLIGHT_TYPE_LABELS: Record<string, string> = {
+  GOAL: "Mål",
+  SAVE: "Räddning",
+  BLOOPER: "Tavlan",
+  OTHER: "Övrigt",
+};
+
+const HIGHLIGHT_ROLE_LABELS: Record<string, string> = {
+  SCORER: "Målskytt",
+  ASSIST: "Assist",
+  GOALKEEPER: "Målvakt",
+};
+
 export default async function AdminHighlightsPage() {
   await requireAdmin();
-  const [teams, trainings, matches, highlights] = await Promise.all([
+  const [teams, trainings, matches, players, highlights] = await Promise.all([
     prisma.team.findMany({ where: { archivedAt: null }, orderBy: [{ season: "desc" }, { name: "asc" }] }),
     prisma.training.findMany({ orderBy: { startsAt: "desc" }, take: 60, select: { id: true, teamId: true, startsAt: true, location: true } }),
     prisma.match.findMany({ orderBy: { startsAt: "desc" }, take: 60, select: { id: true, teamId: true, startsAt: true, opponent: true } }),
+    prisma.teamMember.findMany({
+      where: { team: { archivedAt: null } },
+      select: { id: true, teamId: true, userId: true, jerseyNo: true, user: { select: { name: true } } },
+      orderBy: { jerseyNo: "asc" },
+    }),
     prisma.highlight.findMany({
       orderBy: { createdAt: "desc" },
       take: 100,
-      include: { team: true, author: { select: { name: true } }, training: true, match: true },
+      include: {
+        team: true,
+        author: { select: { name: true } },
+        training: true,
+        match: true,
+        players: { include: { user: { select: { name: true } } } },
+      },
     }),
   ]);
 
@@ -26,6 +50,11 @@ export default async function AdminHighlightsPage() {
     ...trainings.map((t) => ({ id: t.id, teamId: t.teamId, label: `${date(t.startsAt)} · ${t.location}`, kind: "training" as const })),
     ...matches.map((m) => ({ id: m.id, teamId: m.teamId, label: `${date(m.startsAt)} – ${m.opponent}`, kind: "match" as const })),
   ];
+  const playerOptions = players.map((p) => ({
+    id: p.userId,
+    teamId: p.teamId,
+    label: p.jerseyNo != null ? `#${p.jerseyNo} ${p.user.name ?? "Okänd"}` : p.user.name ?? "Okänd",
+  }));
 
   const groups = new Map<string, { label: string; items: typeof highlights }>();
   for (const h of highlights) {
@@ -47,11 +76,13 @@ export default async function AdminHighlightsPage() {
           <Eyebrow>Nytt klipp</Eyebrow>
           <h2 className="mt-1 section-title">Lägg till highlight</h2>
           <AdminForm action={createHighlight} submitLabel="Lägg till highlight" className="mt-4 grid gap-3 lg:grid-cols-2" submitClassName="h-11 rounded-xl bg-ink font-bold text-white disabled:opacity-60 lg:col-span-2">
-            <div className="grid gap-3 lg:col-span-2 lg:grid-cols-2">
-              <TeamOptionalActivitySelect teams={teams.map((t) => ({ id: t.id, label: `${t.name} · ${t.season}` }))} activities={activities} name="activity" />
-            </div>
             <input name="title" required maxLength={120} placeholder="Rubrik, exempelvis Mål 2–1" className={field} />
             <input name="url" required type="url" placeholder="Länk till klippet" className={field} />
+            <TeamHighlightFields
+              teams={teams.map((t) => ({ id: t.id, label: `${t.name} · ${t.season}` }))}
+              activities={activities}
+              players={playerOptions}
+            />
           </AdminForm>
         </Card>
         <Card className="overflow-hidden">
@@ -66,7 +97,14 @@ export default async function AdminHighlightsPage() {
                       <div key={h.id} className="flex items-center justify-between gap-3 rounded-xl border border-divider bg-white/60 p-3">
                         <div className="min-w-0">
                           <a href={h.url} target="_blank" rel="noreferrer" className="block truncate font-bold underline underline-offset-4">{h.title}</a>
-                          <p className="text-sm text-ink-subtle">{date(h.createdAt)} · {h.author.name}</p>
+                          <p className="text-sm text-ink-subtle">
+                            {HIGHLIGHT_TYPE_LABELS[h.type]} · {date(h.createdAt)} · {h.author.name}
+                          </p>
+                          {h.players.length > 0 && (
+                            <p className="mt-1 text-xs text-ink-subtle">
+                              {h.players.map((p) => `${HIGHLIGHT_ROLE_LABELS[p.role]}: ${p.user.name ?? "Okänd"}`).join(" · ")}
+                            </p>
+                          )}
                         </div>
                         <AdminForm action={deleteHighlight} submitLabel="Ta bort" submitClassName="rounded-xl border border-divider px-3 py-2 text-xs font-bold text-signal">
                           <input type="hidden" name="highlightId" value={h.id} />

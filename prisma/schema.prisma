@@ -37,6 +37,19 @@ enum PlayerRequestPosition {
   SKATER
 }
 
+enum HighlightType {
+  GOAL
+  SAVE
+  BLOOPER
+  OTHER
+}
+
+enum HighlightPlayerRole {
+  SCORER
+  ASSIST
+  GOALKEEPER
+}
+
 model User {
   id            String     @id @default(cuid())
   name          String?
@@ -66,6 +79,7 @@ model User {
   playerRequests         PlayerRequest[] @relation("PlayerRequestCreator")
   lineupPlans            LineupPlan[]    @relation("LineupUpdater")
   announcements          Announcement[]  @relation("AnnouncementAuthor")
+  highlightAppearances   HighlightPlayer[]
 }
 
 model Team {
@@ -180,23 +194,38 @@ model MatchStat {
 }
 
 model Highlight {
-  id         String   @id @default(cuid())
+  id         String        @id @default(cuid())
   teamId     String
   authorId   String
   trainingId String?
   matchId    String?
   title      String
   url        String
-  createdAt  DateTime @default(now())
+  type       HighlightType @default(GOAL)
+  createdAt  DateTime      @default(now())
 
-  team     Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  training Training? @relation(fields: [trainingId], references: [id], onDelete: SetNull)
-  match    Match?    @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  team     Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  author   User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  training Training?         @relation(fields: [trainingId], references: [id], onDelete: SetNull)
+  match    Match?            @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  players  HighlightPlayer[]
 
   @@index([teamId, createdAt])
   @@index([trainingId])
   @@index([matchId])
+}
+
+model HighlightPlayer {
+  id          String              @id @default(cuid())
+  highlightId String
+  userId      String
+  role        HighlightPlayerRole
+
+  highlight Highlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([highlightId, userId, role])
+  @@index([userId])
 }
 
 model PlayerRequest {

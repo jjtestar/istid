@@ -70,6 +70,81 @@ export function TeamOptionalActivitySelect({
   );
 }
 
+const HIGHLIGHT_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "GOAL", label: "Mål" },
+  { value: "SAVE", label: "Räddning" },
+  { value: "BLOOPER", label: "Tavlan" },
+  { value: "OTHER", label: "Övrigt" },
+];
+
+/**
+ * Lag → (valfri aktivitet + klipptyp + taggade spelare per roll), allt filtrerat
+ * på samma lagval. Används för highlight-formuläret där ett klipp kan taggas
+ * med målskytt(ar), assist och/eller målvakt ur det valda lagets trupp.
+ */
+export function TeamHighlightFields({
+  teams,
+  activities,
+  players,
+}: {
+  teams: Team[];
+  activities: ActivityOption[];
+  players: ScopedItem[];
+}) {
+  const [teamId, setTeamId] = useState(teams[0]?.id ?? "");
+  const filteredActivities = activities.filter((a) => a.teamId === teamId);
+  const filteredPlayers = players.filter((p) => p.teamId === teamId);
+  const multi = `${field} h-auto min-h-[6.5rem] py-2`;
+
+  return (
+    <>
+      <select aria-label="Lag" name="teamId" value={teamId} onChange={(e) => setTeamId(e.target.value)} className={field}>
+        {teams.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+      </select>
+      <select name="activity" className={field} defaultValue="">
+        <option value="">Ingen specifik aktivitet</option>
+        {filteredActivities.map((a) => (
+          <option key={`${a.kind}:${a.id}`} value={`${a.kind}:${a.id}`}>
+            {a.kind === "training" ? "Träning" : "Match"} · {a.label}
+          </option>
+        ))}
+      </select>
+      <label className="block text-sm font-bold text-ink-subtle lg:col-span-2">
+        Typ av klipp
+        <select name="type" defaultValue="GOAL" className={`${field} mt-1`}>
+          {HIGHLIGHT_TYPE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-sm font-bold text-ink-subtle">
+        Målskytt(ar)
+        <select name="scorers" multiple className={`${multi} mt-1`}>
+          {filteredPlayers.length === 0
+            ? <option value="" disabled>Inga spelare i valt lag</option>
+            : filteredPlayers.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+      </label>
+      <label className="block text-sm font-bold text-ink-subtle">
+        Assist
+        <select name="assists" multiple className={`${multi} mt-1`}>
+          {filteredPlayers.length === 0
+            ? <option value="" disabled>Inga spelare i valt lag</option>
+            : filteredPlayers.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+      </label>
+      <label className="block text-sm font-bold text-ink-subtle">
+        Målvakt
+        <select name="goalkeepers" multiple className={`${multi} mt-1`}>
+          {filteredPlayers.length === 0
+            ? <option value="" disabled>Inga spelare i valt lag</option>
+            : filteredPlayers.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+      </label>
+    </>
+  );
+}
+
 /** Lag → (aktivitet + spelare), där båda listorna filtreras av samma lagval (t.ex. matchstatistik/närvaro). */
 export function TeamActivityPlayerSelect({
   teams,

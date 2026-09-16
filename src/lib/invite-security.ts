@@ -1,8 +1,8 @@
 import { createHmac } from "node:crypto";
 
 function secret() {
-  const value = process.env.AUTH_SECRET ?? process.env.DATABASE_URL;
-  if (!value) throw new Error("AUTH_SECRET eller DATABASE_URL måste vara konfigurerad.");
+  const value = process.env.AUTH_SECRET;
+  if (!value) throw new Error("AUTH_SECRET måste vara konfigurerad.");
   return value;
 }
 

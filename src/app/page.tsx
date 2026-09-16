@@ -6,6 +6,19 @@ import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
 import { getAnnouncementsForTeam, getCalendarEvents, getGroupedTeamHighlights } from "@/lib/queries";
 
+const HIGHLIGHT_TYPE_ICONS: Record<string, string> = {
+  GOAL: "🥅",
+  SAVE: "🧤",
+  BLOOPER: "😅",
+  OTHER: "▶",
+};
+
+const HIGHLIGHT_ROLE_LABELS: Record<string, string> = {
+  SCORER: "Mål",
+  ASSIST: "Assist",
+  GOALKEEPER: "Målvakt",
+};
+
 export default async function Home() {
   const { user, team } = await getCurrentUserWithTeam();
 
@@ -71,12 +84,20 @@ export default async function Home() {
                   <div className="divide-y divide-divider border-t border-divider px-4">
                     {group.items.map((highlight) => (
                       <a key={highlight.id} href={highlight.url} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-3 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signal text-sm text-white" aria-hidden="true">▶</span>
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signal text-sm text-white" aria-hidden="true">
+                          {HIGHLIGHT_TYPE_ICONS[highlight.type] ?? "▶"}
+                        </span>
                         <div className="min-w-0 flex-1">
                           <span className="block text-[15px] font-bold text-ink underline decoration-divider underline-offset-4">
                             {highlight.title}
                           </span>
-                          <span className="text-[12px] text-ink-subtle">Länkat av {highlight.author.name ?? "spelare"}</span>
+                          <span className="text-[12px] text-ink-subtle">
+                            {highlight.players.length > 0
+                              ? highlight.players
+                                  .map((p) => `${HIGHLIGHT_ROLE_LABELS[p.role]}: ${p.user.name ?? "spelare"}`)
+                                  .join(" · ")
+                              : `Länkat av ${highlight.author.name ?? "spelare"}`}
+                          </span>
                         </div>
                       </a>
                     ))}
