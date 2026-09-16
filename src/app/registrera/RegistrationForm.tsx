@@ -29,7 +29,7 @@ export function RegistrationForm() {
       </label>
       <label className="block">
         <span className="mb-1.5 block text-sm font-bold text-ink">Din PIN-kod</span>
-        <input name="pin" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required className={`${inputClass} text-center text-xl font-bold tracking-[0.35em]`} />
+        <input name="pin" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}|[0-9]{8}" minLength={6} maxLength={8} required className={`${inputClass} text-center text-xl font-bold tracking-[0.35em]`} />
         {state?.fieldErrors?.pin ? <span className="mt-1 block text-sm text-signal">{state.fieldErrors.pin}</span> : null}
       </label>
       <label className="flex items-start gap-3 rounded-xl border border-divider bg-rink-crease p-3">

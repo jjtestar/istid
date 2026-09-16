@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { requireActiveUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 export async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user?.email) redirect("/login");
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!user?.isActive || !user.accessApproved || (user.role !== "ADMIN" && !user.isSuperAdmin)) redirect("/");
+  // requireActiveUser already bounces missing, blocked and unapproved accounts,
+  // so all that is left here is the role itself.
+  const user = await requireActiveUser();
+  if (user.role !== "ADMIN" && !user.isSuperAdmin) redirect("/");
   return user;
 }
 

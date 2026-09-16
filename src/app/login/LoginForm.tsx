@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { authenticate } from "@/app/login/actions";
 
-export function LoginForm() {
+export function LoginForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
   const [errorMessage, formAction, pending] = useActionState(authenticate, undefined);
 
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="callbackUrl" value={callbackUrl} />
       <label className="block">
         <span className="mb-1.5 block text-sm font-bold text-ink">E-post (användarnamn)</span>
         <input
@@ -45,6 +47,12 @@ export function LoginForm() {
       >
         {pending ? "Loggar in…" : "Logga in"}
       </button>
+
+      <p className="text-center text-sm text-ink-muted">
+        <Link href="/aterstall" className="font-bold text-ink underline underline-offset-4">
+          Glömt lösenordet?
+        </Link>
+      </p>
     </form>
   );
 }

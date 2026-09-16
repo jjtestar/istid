@@ -1,10 +1,15 @@
-import { cookies } from "next/headers";
+import { cache } from "react";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isPublicPath, requiresAdmin } from "@/lib/route-access";
 
 export const DEFAULT_TEAM_SLUG = "kumla";
 export const DEFAULT_SEASON = "2026/27";
+
+/** Where a session that no longer maps to a usable account gets sent. */
+export const BLOCKED_ACCOUNT_REDIRECT = "/login?orsak=sparrad";
 
 export function teamSlug(name: string) {
   return name
@@ -14,25 +19,79 @@ export function teamSlug(name: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-export async function getCurrentUser() {
-  const { user } = await getCurrentUserWithTeam();
-  return user;
-}
-
-export async function getCurrentUserWithTeam() {
+/**
+ * The authoritative account check. src/proxy.ts only verifies that a session
+ * cookie exists; this re-reads the account from the database so a user who was
+ * blocked or removed after their token was issued stops here, even though the
+ * JWT itself is still valid. Memoised per render pass, so the many callers in a
+ * single page share one token decode and one query.
+ */
+const findSessionAccount = cache(async () => {
   const session = await auth();
-  if (!session?.user?.email) redirect("/login");
-
-  const cookieStore = await cookies();
+  if (!session?.user?.email) return { hasSession: false, user: null };
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: { teams: true },
   });
 
-  if (!user || !user.isActive || !user.accessApproved) {
-    throw new Error("Den inloggade användaren finns inte i Femtekedjan.");
-  }
+  const usable = user && user.isActive && user.accessApproved;
+  return { hasSession: true, user: usable ? user : null };
+});
+
+/**
+ * The signed-in account, or null when there is no session or it is no longer
+ * usable. Returns rather than redirects, for callers that owe an HTTP status
+ * code instead (see /api/my-data).
+ */
+export async function findActiveSessionUser() {
+  return (await findSessionAccount()).user;
+}
+
+/** As above, but sends the browser somewhere sensible instead of returning null. */
+export async function requireActiveUser() {
+  const { hasSession, user } = await findSessionAccount();
+  if (!hasSession) redirect("/login");
+
+  // A valid session whose account is gone or blocked: bounce to the login page
+  // with an explanation rather than throwing a 500 on every page they open.
+  if (!user) redirect(BLOCKED_ACCOUNT_REDIRECT);
+
+  return user;
+}
+
+/**
+ * Called from the root layout so an unwelcome request is turned away *before*
+ * any markup streams. The root loading.tsx puts a Suspense boundary around every
+ * page, so a redirect raised inside a page happens after the shell has been
+ * flushed; Next.js can then only fall back to a meta refresh, and the user sits
+ * looking at the app chrome for a second before moving. Redirecting from the
+ * layout, above that boundary, produces a real 307 instead.
+ *
+ * This does not replace requireActiveUser/requireAdmin in the pages themselves —
+ * those stay authoritative, also cover server actions, and are what still
+ * applies if the proxy never ran and x-pathname is therefore absent.
+ */
+export async function enforceRouteAccess() {
+  const pathname = (await headers()).get("x-pathname");
+  if (!pathname || isPublicPath(pathname)) return;
+
+  const { hasSession, user } = await findSessionAccount();
+  // No session at all is the proxy's business, not ours.
+  if (!hasSession) return;
+  if (!user) redirect(BLOCKED_ACCOUNT_REDIRECT);
+  if (requiresAdmin(pathname) && user.role !== "ADMIN" && !user.isSuperAdmin) redirect("/");
+}
+
+export async function getCurrentUser() {
+  const { user } = await getCurrentUserWithTeam();
+  return user;
+}
+
+export async function getCurrentUserWithTeam() {
+  const user = await requireActiveUser();
+
+  const cookieStore = await cookies();
 
   const availableTeams =
     user.role === "ADMIN" || user.isSuperAdmin

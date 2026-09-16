@@ -43,7 +43,13 @@ export async function changeAppContext(formData: FormData) {
   if (!selectionExists) return;
 
   const cookieStore = await cookies();
-  const options = { httpOnly: true, sameSite: "lax" as const, path: "/", maxAge: 60 * 60 * 24 * 365 };
+  const options = {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  };
   cookieStore.set("istid-team", requestedTeam, options);
   cookieStore.set("istid-season", requestedSeason, options);
   revalidatePath("/", "layout");

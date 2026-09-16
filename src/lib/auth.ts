@@ -2,15 +2,21 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
+import { authConfig } from "@/lib/auth.config";
+import { normalizeEmail } from "@/lib/invite-security";
 import { prisma } from "@/lib/prisma";
 
-if (!process.env.AUTH_SECRET) throw new Error("AUTH_SECRET måste vara konfigurerad.");
+/**
+ * A real bcrypt hash (cost 12) of a value nobody can supply. Comparing against
+ * it keeps the "no such account" path exactly as expensive as the "wrong
+ * password" path, so login response times can't be used to enumerate which
+ * e-mail addresses have accounts.
+ */
+const ABSENT_ACCOUNT_HASH = "$2b$12$0Uw6Fcoe4gUL8OYa21OVSeE.jfHcBxsc0OoF4PJvx4YwBY6Euc1Oi";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: process.env.AUTH_SECRET,
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
   providers: [
     Credentials({
       credentials: {
@@ -23,26 +29,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!email || !password) return null;
 
         const user = await prisma.user.findUnique({
-          where: { email: email.trim().toLocaleLowerCase("sv-SE") },
+          where: { email: normalizeEmail(email) },
         });
-        if (!user?.passwordHash || !user.isActive || !user.accessApproved) return null;
 
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
+        const valid = await bcrypt.compare(password, user?.passwordHash ?? ABSENT_ACCOUNT_HASH);
+        if (!valid || !user?.passwordHash || !user.isActive || !user.accessApproved) return null;
 
         return { id: user.id, name: user.name, email: user.email, role: user.role };
       },
     }),
   ],
   callbacks: {
-    authorized: async ({ auth: session }) => {
-      if (!session?.user?.email) return false;
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: { isActive: true, accessApproved: true },
-      });
-      return user?.isActive === true && user.accessApproved === true;
-    },
     jwt: async ({ token, user }) => {
       if (user) token.role = (user as { role?: string }).role;
       return token;

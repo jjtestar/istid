@@ -1,10 +1,9 @@
 "use server";
 
-import { randomInt } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { audit, requireAdmin, requireSuperAdmin } from "@/lib/admin";
-import { normalizeEmail, secureHash } from "@/lib/invite-security";
+import { generatePin, normalizeEmail, secureHash } from "@/lib/invite-security";
 import { prisma } from "@/lib/prisma";
 
 export type InviteState = { error?: string; invite?: { code: string; email: string; team: string; expiresAt: string } } | undefined;
@@ -20,7 +19,7 @@ export async function createInvite(_state: InviteState, formData: FormData): Pro
 
   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const code = generatePin();
     try {
       const invite = await prisma.inviteCode.create({ data: { codeHash: secureHash(code, "invite"), email, teamId, createdById: admin.id, expiresAt } });
       await audit(admin.id, "Skapade PIN-inbjudan", "InviteCode", invite.id, email);
@@ -95,4 +94,67 @@ export async function setSuperAdmin(formData: FormData) {
 
   await audit(admin.id, enabled ? "Utsåg huvudadmin" : "Tog bort huvudadmin", "User", userId);
   revalidatePath("/admin/anvandare");
+}
+
+export type PasswordResetState =
+  | { error?: string; reset?: { code: string; name: string; email: string; expiresAt: string } }
+  | undefined;
+
+/**
+ * There is no e-mail sender in this app, so account recovery mirrors how
+ * invitations already work: the administrator generates a one-time PIN, reads
+ * it out to the player, and the player redeems it on /aterstall.
+ */
+export async function createPasswordReset(
+  _state: PasswordResetState,
+  formData: FormData,
+): Promise<PasswordResetState> {
+  const admin = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, role: true, isSuperAdmin: true, isActive: true },
+  });
+  if (!target) return { error: "Användaren hittades inte." };
+
+  // Handing out a reset PIN is a full account takeover, so it follows the same
+  // rules as changing someone's role: a plain admin may only reset players,
+  // nobody but a huvudadmin may reset an admin, and no huvudadmin may be reset
+  // by anyone other than themselves.
+  const allowed =
+    target.id === admin.id || (!target.isSuperAdmin && (admin.isSuperAdmin || target.role === "PLAYER"));
+  if (!allowed) return { error: "Du har inte behörighet att återställa det kontots lösenord." };
+  if (!target.isActive) return { error: "Kontot är spärrat. Aktivera det först." };
+
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const code = generatePin();
+    try {
+      const reset = await prisma.$transaction(async (tx) => {
+        // Only one live code per account, so an older one that leaked can't
+        // still be redeemed after a new one is issued.
+        await tx.passwordResetCode.updateMany({
+          where: { userId: target.id, usedAt: null, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        return tx.passwordResetCode.create({
+          data: { codeHash: secureHash(code, "password-reset"), userId: target.id, createdById: admin.id, expiresAt },
+        });
+      });
+      await audit(admin.id, "Skapade lösenordsåterställning", "PasswordResetCode", reset.id, target.email);
+      revalidatePath("/admin/anvandare");
+      return {
+        reset: {
+          code,
+          name: target.name ?? target.email,
+          email: target.email,
+          expiresAt: expiresAt.toISOString(),
+        },
+      };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") continue;
+      throw error;
+    }
+  }
+  return { error: "Kunde inte skapa en unik kod. Försök igen." };
 }

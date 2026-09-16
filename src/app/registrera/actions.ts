@@ -1,50 +1,16 @@
 "use server";
 
-import { headers } from "next/headers";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { signIn } from "@/lib/auth";
-import { normalizeEmail, normalizePin, secureHash } from "@/lib/invite-security";
+import { isValidPinShape, normalizeEmail, normalizePin, secureHash } from "@/lib/invite-security";
 import { prisma } from "@/lib/prisma";
+import { guardAttempts, RATE_LIMIT_MESSAGE } from "@/lib/rate-limit";
 
 export type RegistrationState = {
   error?: string;
   fieldErrors?: Partial<Record<"name" | "email" | "password" | "pin" | "age", string>>;
 } | undefined;
-
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
-
-async function attemptKey(email: string) {
-  const requestHeaders = await headers();
-  const forwarded = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  return secureHash(`${email}:${forwarded}`, "registration-attempt");
-}
-
-async function isBlocked(keyHash: string, now: Date) {
-  const attempt = await prisma.registrationAttempt.findUnique({ where: { keyHash } });
-  return Boolean(attempt?.blockedUntil && attempt.blockedUntil > now);
-}
-
-async function recordFailure(keyHash: string, now: Date) {
-  const current = await prisma.registrationAttempt.findUnique({ where: { keyHash } });
-  const freshWindow = !current || now.getTime() - current.windowStartedAt.getTime() >= WINDOW_MS;
-  const attempts = freshWindow ? 1 : current.attempts + 1;
-  await prisma.registrationAttempt.upsert({
-    where: { keyHash },
-    create: {
-      keyHash,
-      attempts,
-      windowStartedAt: now,
-      blockedUntil: attempts >= MAX_ATTEMPTS ? new Date(now.getTime() + WINDOW_MS) : null,
-    },
-    update: {
-      attempts,
-      windowStartedAt: freshWindow ? now : current!.windowStartedAt,
-      blockedUntil: attempts >= MAX_ATTEMPTS ? new Date(now.getTime() + WINDOW_MS) : null,
-    },
-  });
-}
 
 export async function registerUser(
   _previousState: RegistrationState,
@@ -62,15 +28,13 @@ export async function registerUser(
   if (password.length < 8 || !/[A-Za-zÅÄÖåäö]/.test(password) || !/\d/.test(password)) {
     fieldErrors.password = "Minst 8 tecken, med både bokstav och siffra.";
   }
-  if (!/^\d{6}$/.test(pin)) fieldErrors.pin = "PIN-koden ska bestå av 6 siffror.";
+  if (!isValidPinShape(pin)) fieldErrors.pin = "Ange PIN-koden du fått, 8 siffror.";
   if (!acceptedAge) fieldErrors.age = "Du måste bekräfta att du är minst 18 år.";
   if (Object.keys(fieldErrors).length) return { fieldErrors };
 
   const now = new Date();
-  const keyHash = await attemptKey(email);
-  if (await isBlocked(keyHash, now)) {
-    return { error: "För många försök. Vänta 15 minuter och försök igen." };
-  }
+  const attempts = await guardAttempts("registration", email);
+  if (attempts.blocked) return { error: RATE_LIMIT_MESSAGE };
 
   const codeHash = secureHash(pin, "invite");
   const invite = await prisma.inviteCode.findUnique({ where: { codeHash } });
@@ -82,7 +46,7 @@ export async function registerUser(
     invite.expiresAt > now;
 
   if (!validInvite) {
-    await recordFailure(keyHash, now);
+    await attempts.fail();
     return { error: "PIN-koden är ogiltig, förbrukad eller har gått ut." };
   }
 
@@ -105,7 +69,6 @@ export async function registerUser(
       });
       await tx.teamMember.create({ data: { teamId: invite.teamId, userId: user.id } });
       await tx.inviteCode.update({ where: { id: invite.id }, data: { usedById: user.id } });
-      await tx.registrationAttempt.deleteMany({ where: { keyHash } });
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -117,5 +80,6 @@ export async function registerUser(
     throw error;
   }
 
+  await attempts.succeed();
   await signIn("credentials", { email, password, redirectTo: "/" });
 }

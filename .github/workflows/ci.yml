@@ -1,4 +1,4 @@
-name: Build bundle size check
+name: CI
 
 on:
   pull_request:
@@ -28,7 +28,17 @@ jobs:
 
       - run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
       - run: npx next build
+
+      # After the build, so .next/types exists for the generated route helpers.
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Check function bundle sizes
         run: npm run check:bundle-size

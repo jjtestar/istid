@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow } from "next/font/google";
 import { BottomNav } from "@/components/BottomNav";
 import { PwaProvider } from "@/components/PwaProvider";
+import { enforceRouteAccess } from "@/lib/current-user";
 import { getThemePreference } from "@/lib/theme";
 import "./globals.css";
 
@@ -35,6 +36,7 @@ export async function generateViewport(): Promise<Viewport> {
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
+  await enforceRouteAccess();
   const theme = await getThemePreference();
 
   return (

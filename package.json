@@ -8,12 +8,15 @@
     "build": "prisma migrate deploy && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "check:bundle-size": "node scripts/check-function-bundle-size.mjs",
-    "test:pwa": "node --require next/dist/server/node-environment --import tsx tests/pwa.mjs"
+    "test:pwa": "node --require next/dist/server/node-environment --import tsx tests/pwa.mjs",
+    "test:security": "node --require next/dist/server/node-environment --import tsx tests/security.mjs",
+    "test": "npm run test:pwa && npm run test:security"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

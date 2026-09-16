@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { InstallAppButton } from "@/components/PwaProvider";
+import { PasswordChangeForm } from "@/components/PasswordChangeForm";
 import { PlayerDetailsForm } from "@/components/PlayerDetailsForm";
 import { SeasonParticipationForm } from "@/components/SeasonParticipationForm";
 import { Card, Eyebrow } from "@/components/ui";
@@ -32,6 +33,12 @@ export default async function MinProfilPage() {
           <p className="mt-3 text-[13px] leading-5 text-ink-subtle">
             Namn och e-post hanteras av en administratör och kan inte ändras här.
           </p>
+        </Card>
+
+        <Card className="p-5">
+          <Eyebrow>Säkerhet</Eyebrow>
+          <h2 className="mt-1 section-title">Byt lösenord</h2>
+          <PasswordChangeForm />
         </Card>
 
         <Card className="p-5">

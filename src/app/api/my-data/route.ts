@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { findActiveSessionUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -8,8 +9,15 @@ export async function GET() {
     return Response.json({ error: "Du måste vara inloggad." }, { status: 401 });
   }
 
+  // A session token stays valid for weeks, so having one is not enough: the
+  // account must still be active and approved at the moment of the export.
+  const account = await findActiveSessionUser();
+  if (!account) {
+    return Response.json({ error: "Ditt konto är spärrat." }, { status: 403 });
+  }
+
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { id: account.id },
     select: {
       id: true,
       name: true,
