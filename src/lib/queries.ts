@@ -254,7 +254,10 @@ export async function getTeamStats(teamId: string) {
 export async function getTeamHighlights(teamId: string) {
   return prisma.highlight.findMany({
     where: { teamId },
-    include: { author: { select: { id: true, name: true } } },
+    include: {
+      author: { select: { id: true, name: true } },
+      players: { include: { user: { select: { id: true, name: true } } } },
+    },
     orderBy: { createdAt: "desc" },
     take: 8,
   });
@@ -264,7 +267,12 @@ export async function getTeamHighlights(teamId: string) {
 export async function getGroupedTeamHighlights(teamId: string) {
   const highlights = await prisma.highlight.findMany({
     where: { teamId },
-    include: { author: { select: { id: true, name: true } }, training: true, match: true },
+    include: {
+      author: { select: { id: true, name: true } },
+      training: true,
+      match: true,
+      players: { include: { user: { select: { id: true, name: true } } } },
+    },
     orderBy: { createdAt: "desc" },
   });
 

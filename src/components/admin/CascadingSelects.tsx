@@ -70,6 +70,83 @@ export function TeamOptionalActivitySelect({
   );
 }
 
+const HIGHLIGHT_TYPES = [
+  { value: "GOAL", label: "Mål" },
+  { value: "SAVE", label: "Räddning" },
+  { value: "BLOOPER", label: "Blooper" },
+  { value: "OTHER", label: "Övrigt" },
+] as const;
+
+function PlayerCheckboxes({ label, name, players }: { label: string; name: string; players: ScopedItem[] }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle">{label}</p>
+      {players.length === 0 ? (
+        <p className="text-sm text-ink-subtle">Inga spelare i valt lag</p>
+      ) : (
+        <div className="grid max-h-40 gap-1.5 overflow-y-auto rounded-xl border border-divider p-2 sm:grid-cols-2">
+          {players.map((p) => (
+            <label key={p.id} className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm has-[:checked]:bg-rink-crease">
+              <input type="checkbox" name={name} value={p.id} className="h-4 w-4" />
+              {p.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Lag → typ av klipp → (valfri aktivitet + taggade spelare), för att lägga till
+ * highlights. Vilka spelarfält som visas beror på vald typ: mål ger målskytt/assist,
+ * räddning ger målvakt, medan blooper/övrigt inte kräver några spelare.
+ */
+export function HighlightFieldsSelect({
+  teams,
+  activities,
+  players,
+}: {
+  teams: Team[];
+  activities: ActivityOption[];
+  players: ScopedItem[];
+}) {
+  const [teamId, setTeamId] = useState(teams[0]?.id ?? "");
+  const [type, setType] = useState<(typeof HIGHLIGHT_TYPES)[number]["value"]>("GOAL");
+  const filteredActivities = activities.filter((a) => a.teamId === teamId);
+  const filteredPlayers = players.filter((p) => p.teamId === teamId);
+
+  return (
+    <>
+      <select aria-label="Lag" name="teamId" value={teamId} onChange={(e) => setTeamId(e.target.value)} className={field}>
+        {teams.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+      </select>
+      <select aria-label="Typ av klipp" name="type" value={type} onChange={(e) => setType(e.target.value as typeof type)} className={field}>
+        {HIGHLIGHT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+      </select>
+      <select name="activity" className={`${field} lg:col-span-2`} defaultValue="">
+        <option value="">Ingen specifik aktivitet</option>
+        {filteredActivities.map((a) => (
+          <option key={`${a.kind}:${a.id}`} value={`${a.kind}:${a.id}`}>
+            {a.kind === "training" ? "Träning" : "Match"} · {a.label}
+          </option>
+        ))}
+      </select>
+      {type === "GOAL" ? (
+        <div className="grid gap-3 lg:col-span-2 sm:grid-cols-2">
+          <PlayerCheckboxes label="Målskytt" name="scorerIds" players={filteredPlayers} />
+          <PlayerCheckboxes label="Assist" name="assistIds" players={filteredPlayers} />
+        </div>
+      ) : null}
+      {type === "SAVE" ? (
+        <div className="lg:col-span-2">
+          <PlayerCheckboxes label="Målvakt" name="goalkeeperIds" players={filteredPlayers} />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 /** Lag → (aktivitet + spelare), där båda listorna filtreras av samma lagval (t.ex. matchstatistik/närvaro). */
 export function TeamActivityPlayerSelect({
   teams,

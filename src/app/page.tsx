@@ -6,6 +6,9 @@ import { getCurrentUserWithTeam } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
 import { getAnnouncementsForTeam, getCalendarEvents, getGroupedTeamHighlights } from "@/lib/queries";
 
+const HIGHLIGHT_TYPE_LABELS: Record<string, string> = { GOAL: "Mål", SAVE: "Räddning", BLOOPER: "Blooper", OTHER: "Övrigt" };
+const HIGHLIGHT_ROLE_LABELS: Record<string, string> = { SCORER: "Målskytt", ASSIST: "Assist", GOALKEEPER: "Målvakt" };
+
 export default async function Home() {
   const { user, team } = await getCurrentUserWithTeam();
 
@@ -76,7 +79,16 @@ export default async function Home() {
                           <span className="block text-[15px] font-bold text-ink underline decoration-divider underline-offset-4">
                             {highlight.title}
                           </span>
-                          <span className="text-[12px] text-ink-subtle">Länkat av {highlight.author.name ?? "spelare"}</span>
+                          <span className="text-[12px] text-ink-subtle">
+                            {HIGHLIGHT_TYPE_LABELS[highlight.type] ?? highlight.type} · Länkat av {highlight.author.name ?? "spelare"}
+                          </span>
+                          {highlight.players.length > 0 ? (
+                            <span className="block text-[12px] text-ink-subtle">
+                              {highlight.players
+                                .map((p) => `${HIGHLIGHT_ROLE_LABELS[p.role] ?? p.role}: ${p.user.name ?? "spelare"}`)
+                                .join(" · ")}
+                            </span>
+                          ) : null}
                         </div>
                       </a>
                     ))}

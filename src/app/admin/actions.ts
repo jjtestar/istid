@@ -333,11 +333,19 @@ export async function saveTrainingAttendance(_prev: FormState, formData: FormDat
   return { success: "Närvaron sparades." };
 }
 
+const HIGHLIGHT_TYPES = new Set(["GOAL", "SAVE", "BLOOPER", "OTHER"]);
+const HIGHLIGHT_PLAYER_FIELDS = [
+  ["scorerIds", "SCORER"],
+  ["assistIds", "ASSIST"],
+  ["goalkeeperIds", "GOALKEEPER"],
+] as const;
+
 export async function createHighlight(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireAdmin();
   const teamId = text(formData, "teamId");
   const title = text(formData, "title");
   const url = text(formData, "url");
+  const type = text(formData, "type");
   const activity = text(formData, "activity");
   const [activityKind, activityId] = activity.includes(":") ? activity.split(":") : [null, null];
   const trainingId = activityKind === "training" ? activityId : "";
@@ -346,21 +354,38 @@ export async function createHighlight(_prev: FormState, formData: FormData): Pro
   try { parsed = new URL(url); } catch { return { error: "Ange en giltig länk." }; }
   if (!["http:", "https:"].includes(parsed.protocol)) return { error: "Länken måste vara http eller https." };
   if (!title) return { error: "Ange en titel." };
-  if (!(await prisma.team.findUnique({ where: { id: teamId }, select: { id: true } }))) return { error: "Laget hittades inte." };
+  if (!HIGHLIGHT_TYPES.has(type)) return { error: "Välj en giltig typ av klipp." };
+  const team = await prisma.team.findUnique({ where: { id: teamId }, select: { id: true, season: true } });
+  if (!team) return { error: "Laget hittades inte." };
+  // Highlights can only be added for the current season or a season that hasn't started yet —
+  // older seasons are historical data and shouldn't receive new content.
+  if (team.season < DEFAULT_SEASON) return { error: "Går inte att lägga till highlights för en tidigare säsong." };
   if (trainingId && !(await prisma.training.findFirst({ where: { id: trainingId, teamId }, select: { id: true } }))) {
     return { error: "Träningen hör inte till valt lag." };
   }
   if (matchId && !(await prisma.match.findFirst({ where: { id: matchId, teamId }, select: { id: true } }))) {
     return { error: "Matchen hör inte till valt lag." };
   }
+
+  const roster = await prisma.teamMember.findMany({ where: { teamId }, select: { userId: true } });
+  const rosterIds = new Set(roster.map((r) => r.userId));
+  const players: { userId: string; role: "SCORER" | "ASSIST" | "GOALKEEPER" }[] = [];
+  for (const [field, role] of HIGHLIGHT_PLAYER_FIELDS) {
+    for (const id of new Set(formData.getAll(field).map(String))) {
+      if (rosterIds.has(id)) players.push({ userId: id, role });
+    }
+  }
+
   const highlight = await prisma.highlight.create({
     data: {
       teamId,
       authorId: admin.id,
       title,
       url: parsed.toString(),
+      type: type as "GOAL" | "SAVE" | "BLOOPER" | "OTHER",
       trainingId: trainingId || null,
       matchId: matchId || null,
+      players: { create: players },
     },
   });
   await audit(admin.id, "Lade till highlight", "Highlight", highlight.id, title);

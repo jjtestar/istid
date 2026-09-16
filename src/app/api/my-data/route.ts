@@ -79,8 +79,23 @@ export async function GET() {
         select: {
           title: true,
           url: true,
+          type: true,
           createdAt: true,
           team: { select: { name: true, season: true } },
+        },
+      },
+      highlightAppearances: {
+        select: {
+          role: true,
+          highlight: {
+            select: {
+              title: true,
+              url: true,
+              type: true,
+              createdAt: true,
+              team: { select: { name: true, season: true } },
+            },
+          },
         },
       },
     },
@@ -108,6 +123,7 @@ export async function GET() {
     matchRegistrations: user.matchRegistrations,
     matchStats: user.matchStats,
     authoredHighlights: user.highlights,
+    highlightAppearances: user.highlightAppearances,
   };
   const date = new Date().toISOString().slice(0, 10);
 
