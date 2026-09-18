@@ -130,12 +130,13 @@ export function SeasonParticipationForm({
     );
     const dayLabels = selectedTrainingDays.map((day) => day.label.toLocaleLowerCase("sv-SE"));
     const formattedTrainingDays =
-      dayLabels.length === 1
+      dayLabels.length === 0
+        ? ""
+        : dayLabels.length === 1
         ? dayLabels[0]
         : `${dayLabels.slice(0, -1).join(", ")} och ${dayLabels.at(-1)}`;
-    const trainingDaysSummary = formattedTrainingDays
-      ? formattedTrainingDays.charAt(0).toLocaleUpperCase("sv-SE") + formattedTrainingDays.slice(1)
-      : "";
+    const trainingDaysSummary =
+      formattedTrainingDays.charAt(0).toLocaleUpperCase("sv-SE") + formattedTrainingDays.slice(1);
 
     return (
       <div>
@@ -186,135 +187,135 @@ export function SeasonParticipationForm({
         Ange om du deltar i matcher och vilka fasta träningsdagar som fungerar.
       </p>
       <form ref={formRef} action={saveParticipation} className="mt-4 space-y-5">
-      <fieldset>
-        <legend className="sr-only">Deltar du under säsongen?</legend>
-        <div className="grid gap-2">
-          <label
-            className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-base font-semibold text-ink ${
-              participation === "yes"
-                ? "border-ink bg-rink-crease"
-                : "border-divider bg-white"
-            }`}
-          >
-            <input
-              type="radio"
-              name="playingThisSeason"
-              value="yes"
-              required
-              checked={participation === "yes"}
-              onChange={() => setParticipation("yes")}
-              className="h-5 w-5 accent-ink"
-            />
-            Jag är med
-          </label>
-          <label
-            className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-base font-semibold text-ink ${
-              participation === "no"
-                ? "border-signal bg-rink-line-red"
-                : "border-divider bg-white"
-            }`}
-          >
-            <input
-              type="radio"
-              name="playingThisSeason"
-              value="no"
-              required
-              checked={participation === "no"}
-              onChange={() => setParticipation("no")}
-              className="h-5 w-5 accent-signal"
-            />
-            Jag är inte med
-          </label>
-        </div>
-      </fieldset>
+        <fieldset>
+          <legend className="sr-only">Deltar du under säsongen?</legend>
+          <div className="grid gap-2">
+            <label
+              className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-base font-semibold text-ink ${
+                participation === "yes"
+                  ? "border-ink bg-rink-crease"
+                  : "border-divider bg-white"
+              }`}
+            >
+              <input
+                type="radio"
+                name="playingThisSeason"
+                value="yes"
+                required
+                checked={participation === "yes"}
+                onChange={() => setParticipation("yes")}
+                className="h-5 w-5 accent-ink"
+              />
+              Jag är med
+            </label>
+            <label
+              className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-base font-semibold text-ink ${
+                participation === "no"
+                  ? "border-signal bg-rink-line-red"
+                  : "border-divider bg-white"
+              }`}
+            >
+              <input
+                type="radio"
+                name="playingThisSeason"
+                value="no"
+                required
+                checked={participation === "no"}
+                onChange={() => setParticipation("no")}
+                className="h-5 w-5 accent-signal"
+              />
+              Jag är inte med
+            </label>
+          </div>
+        </fieldset>
 
-      {participation === "yes" ? (
-        <div className="space-y-5 border-t border-divider pt-5">
-          <fieldset>
-            <legend className="text-sm font-bold text-ink">Vad är du med på?</legend>
-            <div className="mt-2 grid gap-2">
-              <label
-                className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold text-ink ${
-                  participationType === "TRAINING_AND_MATCHES"
-                    ? "border-ink bg-rink-crease"
-                    : "border-divider bg-white"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="participationType"
-                  value="TRAINING_AND_MATCHES"
-                  required
-                  checked={participationType === "TRAINING_AND_MATCHES"}
-                  onChange={() => setParticipationType("TRAINING_AND_MATCHES")}
-                  className="h-5 w-5 accent-ink"
-                />
-                Träningar och matcher
-              </label>
-              <label
-                className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold text-ink ${
-                  participationType === "TRAINING_ONLY"
-                    ? "border-ink bg-rink-crease"
-                    : "border-divider bg-white"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="participationType"
-                  value="TRAINING_ONLY"
-                  required
-                  checked={participationType === "TRAINING_ONLY"}
-                  onChange={() => setParticipationType("TRAINING_ONLY")}
-                  className="h-5 w-5 accent-ink"
-                />
-                Bara träningar
-              </label>
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend className="text-sm font-bold text-ink">Vilka dagar kan du träna?</legend>
-            <p className="mt-1 text-[13px] text-ink-subtle">Välj minst en av lagets fasta dagar.</p>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {trainingDays.map((day) => (
+        {participation === "yes" ? (
+          <div className="space-y-5 border-t border-divider pt-5">
+            <fieldset>
+              <legend className="text-sm font-bold text-ink">Vad är du med på?</legend>
+              <div className="mt-2 grid gap-2">
                 <label
-                  key={day.value}
-                  className="flex min-h-16 cursor-pointer flex-col items-center justify-center rounded-xl border border-divider bg-white px-2 py-2 text-center has-[:checked]:border-ink has-[:checked]:bg-rink-crease has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink"
+                  className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold text-ink ${
+                    participationType === "TRAINING_AND_MATCHES"
+                      ? "border-ink bg-rink-crease"
+                      : "border-divider bg-white"
+                  }`}
                 >
                   <input
-                    type="checkbox"
-                    name="trainingDays"
-                    value={day.value}
-                    checked={selectedDays.includes(day.value)}
-                    onChange={() => toggleDay(day.value)}
-                    className="sr-only"
+                    type="radio"
+                    name="participationType"
+                    value="TRAINING_AND_MATCHES"
+                    required
+                    checked={participationType === "TRAINING_AND_MATCHES"}
+                    onChange={() => setParticipationType("TRAINING_AND_MATCHES")}
+                    className="h-5 w-5 accent-ink"
                   />
-                  <span className="text-sm font-bold text-ink">{day.label}</span>
-                  <span className="text-[11px] text-ink-subtle">{day.detail}</span>
+                  Träningar och matcher
                 </label>
-              ))}
-            </div>
-            {missingTrainingDay ? (
-              <p className="mt-2 text-sm font-semibold text-signal" role="alert">
-                Välj minst en träningsdag.
-              </p>
-            ) : null}
-          </fieldset>
-        </div>
-      ) : null}
+                <label
+                  className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold text-ink ${
+                    participationType === "TRAINING_ONLY"
+                      ? "border-ink bg-rink-crease"
+                      : "border-divider bg-white"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="participationType"
+                    value="TRAINING_ONLY"
+                    required
+                    checked={participationType === "TRAINING_ONLY"}
+                    onChange={() => setParticipationType("TRAINING_ONLY")}
+                    className="h-5 w-5 accent-ink"
+                  />
+                  Bara träningar
+                </label>
+              </div>
+            </fieldset>
 
-      <div className="grid gap-2">
-        <SaveButton disabled={participation === "" || missingTrainingDay} />
-        {savedSelection ? (
-          <button
-            type="button"
-            onClick={cancelEditing}
-            className="h-11 w-full rounded-xl px-5 text-sm font-bold text-ink-subtle transition-colors hover:bg-divider/40"
-          >
-            Avbryt
-          </button>
+            <fieldset>
+              <legend className="text-sm font-bold text-ink">Vilka dagar kan du träna?</legend>
+              <p className="mt-1 text-[13px] text-ink-subtle">Välj minst en av lagets fasta dagar.</p>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {trainingDays.map((day) => (
+                  <label
+                    key={day.value}
+                    className="flex min-h-16 cursor-pointer flex-col items-center justify-center rounded-xl border border-divider bg-white px-2 py-2 text-center has-[:checked]:border-ink has-[:checked]:bg-rink-crease has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink"
+                  >
+                    <input
+                      type="checkbox"
+                      name="trainingDays"
+                      value={day.value}
+                      checked={selectedDays.includes(day.value)}
+                      onChange={() => toggleDay(day.value)}
+                      className="sr-only"
+                    />
+                    <span className="text-sm font-bold text-ink">{day.label}</span>
+                    <span className="text-[11px] text-ink-subtle">{day.detail}</span>
+                  </label>
+                ))}
+              </div>
+              {missingTrainingDay ? (
+                <p className="mt-2 text-sm font-semibold text-signal" role="alert">
+                  Välj minst en träningsdag.
+                </p>
+              ) : null}
+            </fieldset>
+          </div>
         ) : null}
-      </div>
+
+        <div className="grid gap-2">
+          <SaveButton disabled={participation === "" || missingTrainingDay} />
+          {savedSelection ? (
+            <button
+              type="button"
+              onClick={cancelEditing}
+              className="h-11 w-full rounded-xl px-5 text-sm font-bold text-ink-subtle transition-colors hover:bg-divider/40"
+            >
+              Avbryt
+            </button>
+          ) : null}
+        </div>
         {savedSelection === null ? (
           <p className="text-center text-xs text-ink-subtle">Du kan ändra ditt val när som helst.</p>
         ) : null}
