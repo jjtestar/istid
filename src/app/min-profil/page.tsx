@@ -51,13 +51,9 @@ export default async function MinProfilPage() {
 
         {team && membership && team.season === DEFAULT_SEASON ? (
           <Card className="p-5">
-            <Eyebrow>Säsongen {team.season}</Eyebrow>
-            <h2 className="mt-1 section-title">Hur deltar du den här säsongen?</h2>
-            <p className="mt-2 text-sm leading-6 text-ink-subtle">
-              Ange om du deltar i matcher och vilka fasta träningsdagar som fungerar.
-            </p>
             <SeasonParticipationForm
               key={membership.id}
+              season={team.season}
               initialPlaying={membership.playingThisSeason}
               initialParticipatesInMatches={membership.participatesInMatches}
               initialTrainingDays={membership.trainingDays}

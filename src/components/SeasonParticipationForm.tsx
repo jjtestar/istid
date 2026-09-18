@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { updateSeasonParticipation } from "@/app/actions";
+import { Eyebrow } from "@/components/ui";
 
 type TrainingDay = "TUESDAY" | "THURSDAY" | "SATURDAY";
 type Participation = "yes" | "no" | "";
@@ -35,10 +36,12 @@ function SaveButton({ disabled }: { disabled: boolean }) {
 }
 
 export function SeasonParticipationForm({
+  season,
   initialPlaying,
   initialParticipatesInMatches,
   initialTrainingDays,
 }: {
+  season: string;
   initialPlaying: boolean | null;
   initialParticipatesInMatches: boolean | null;
   initialTrainingDays: TrainingDay[];
@@ -66,6 +69,22 @@ export function SeasonParticipationForm({
         },
   );
   const [editing, setEditing] = useState(initialParticipation === "");
+  const [statusMessage, setStatusMessage] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+  const pendingFocus = useRef<"form" | "edit" | null>(null);
+
+  useEffect(() => {
+    if (pendingFocus.current === "form" && editing) {
+      formRef.current
+        ?.querySelector<HTMLInputElement>('input[name="playingThisSeason"]:checked')
+        ?.focus();
+      pendingFocus.current = null;
+    } else if (pendingFocus.current === "edit" && !editing) {
+      editButtonRef.current?.focus();
+      pendingFocus.current = null;
+    }
+  }, [editing]);
 
   function toggleDay(day: TrainingDay) {
     setSelectedDays((current) =>
@@ -80,6 +99,8 @@ export function SeasonParticipationForm({
     if (!saved || participation === "") return;
 
     setSavedSelection({ participation, participationType, selectedDays });
+    setStatusMessage("Ditt säsongsval är sparat.");
+    pendingFocus.current = "edit";
     setEditing(false);
   }
 
@@ -89,6 +110,8 @@ export function SeasonParticipationForm({
       setParticipationType(savedSelection.participationType);
       setSelectedDays(savedSelection.selectedDays);
     }
+    setStatusMessage("");
+    pendingFocus.current = "form";
     setEditing(true);
   }
 
@@ -97,6 +120,7 @@ export function SeasonParticipationForm({
     setParticipation(savedSelection.participation);
     setParticipationType(savedSelection.participationType);
     setSelectedDays(savedSelection.selectedDays);
+    pendingFocus.current = "edit";
     setEditing(false);
   }
 
@@ -104,66 +128,64 @@ export function SeasonParticipationForm({
     const selectedTrainingDays = trainingDays.filter((day) =>
       savedSelection.selectedDays.includes(day.value),
     );
+    const dayLabels = selectedTrainingDays.map((day) => day.label.toLocaleLowerCase("sv-SE"));
+    const formattedTrainingDays =
+      dayLabels.length === 1
+        ? dayLabels[0]
+        : `${dayLabels.slice(0, -1).join(", ")} och ${dayLabels.at(-1)}`;
+    const trainingDaysSummary = formattedTrainingDays
+      ? formattedTrainingDays.charAt(0).toLocaleUpperCase("sv-SE") + formattedTrainingDays.slice(1)
+      : "";
 
     return (
-      <div className="mt-4" aria-live="polite">
-        <div className="rounded-xl border border-ink bg-rink-crease p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-[0.1em] text-ink-subtle">
-                Ditt val
-              </span>
-              <h3 className="mt-1 text-lg font-bold text-ink">
-                {savedSelection.participation === "yes" ? "Jag är med" : "Jag är inte med"}
-              </h3>
-            </div>
-            <span className="rounded-full bg-ink px-2.5 py-1 text-xs font-bold text-white">Sparat</span>
+      <div>
+        <p role="status" aria-live="polite" className="sr-only">{statusMessage}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Eyebrow>Säsongen {season}</Eyebrow>
+            <h2 className="mt-1 section-title">Ditt säsongsval</h2>
           </div>
-
-          {savedSelection.participation === "yes" ? (
-            <dl className="mt-4 space-y-3 border-t border-divider pt-4 text-sm">
-              <div>
-                <dt className="font-bold text-ink">Deltagande</dt>
-                <dd className="text-ink-subtle">
-                  {savedSelection.participationType === "TRAINING_AND_MATCHES"
-                    ? "Träningar och matcher"
-                    : "Bara träningar"}
-                </dd>
-              </div>
-              <div>
-                <dt className="font-bold text-ink">Träningsdagar</dt>
-                <dd className="mt-2 flex flex-wrap gap-2">
-                  {selectedTrainingDays.map((day) => (
-                    <span
-                      key={day.value}
-                      className="rounded-full border border-divider bg-white px-3 py-1 text-sm font-semibold text-ink"
-                    >
-                      {day.label}
-                    </span>
-                  ))}
-                </dd>
-              </div>
-            </dl>
-          ) : (
-            <p className="mt-3 text-sm text-ink-subtle">
-              Du är inte anmäld till träningar eller matcher den här säsongen.
-            </p>
-          )}
+          <button
+            type="button"
+            ref={editButtonRef}
+            onClick={editSelection}
+            aria-label="Ändra ditt säsongsval"
+            className="min-h-11 min-w-11 shrink-0 rounded-lg px-2 text-sm font-bold text-signal underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            Ändra
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={editSelection}
-          className="mt-3 h-12 w-full rounded-xl border border-ink bg-white px-5 text-base font-bold text-ink transition-colors hover:bg-rink-crease"
-        >
-          Ändra mitt val
-        </button>
+        <dl className="mt-4 overflow-hidden rounded-xl border border-divider bg-divider/20">
+          <div className="px-4 py-3">
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle">Deltar</dt>
+            <dd className="mt-1 text-base font-semibold text-ink">
+              {savedSelection.participation === "yes"
+                ? savedSelection.participationType === "TRAINING_AND_MATCHES"
+                  ? "Ja – träningar och matcher"
+                  : "Ja – bara träningar"
+                : "Nej, inte den här säsongen"}
+            </dd>
+          </div>
+          {savedSelection.participation === "yes" ? (
+            <div className="border-t border-divider px-4 py-3">
+              <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle">Träningsdagar</dt>
+              <dd className="mt-1 text-base font-semibold text-ink">{trainingDaysSummary}</dd>
+            </div>
+          ) : null}
+        </dl>
       </div>
     );
   }
 
   return (
-    <form action={saveParticipation} className="mt-4 space-y-5">
+    <div>
+      <p role="status" aria-live="polite" className="sr-only">{statusMessage}</p>
+      <Eyebrow>Säsongen {season}</Eyebrow>
+      <h2 className="mt-1 section-title">Hur deltar du den här säsongen?</h2>
+      <p className="mt-2 text-sm leading-6 text-ink-subtle">
+        Ange om du deltar i matcher och vilka fasta träningsdagar som fungerar.
+      </p>
+      <form ref={formRef} action={saveParticipation} className="mt-4 space-y-5">
       <fieldset>
         <legend className="sr-only">Deltar du under säsongen?</legend>
         <div className="grid gap-2">
@@ -293,7 +315,10 @@ export function SeasonParticipationForm({
           </button>
         ) : null}
       </div>
-      <p className="text-center text-xs text-ink-subtle">Du kan ändra ditt val när som helst.</p>
-    </form>
+        {savedSelection === null ? (
+          <p className="text-center text-xs text-ink-subtle">Du kan ändra ditt val när som helst.</p>
+        ) : null}
+      </form>
+    </div>
   );
 }
