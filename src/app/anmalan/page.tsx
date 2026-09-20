@@ -66,78 +66,82 @@ export default async function AnmalanPage() {
           <Card className="p-5 text-center text-sm text-ink-subtle">
             Inga kommande träningar eller matcher att anmäla sig till.
           </Card>
-        ) : null}
+        ) : (
+          /* Two per row once there is room for it, so a team with several
+             upcoming activities doesn't become one long scroll on desktop. */
+          <div className="grid gap-6 xl:grid-cols-2">
+            {featuredEvents.map(({ kind, item, team, roster }) => {
+              const isTraining = kind === "training";
+              const registrationByUser = new Map(
+                item.registrations.map((candidate) => [candidate.userId, candidate]),
+              );
+              const registration = registrationByUser.get(user.id);
+              const respond = isTraining ? respondToTraining : respondToMatch;
+              const idField = isTraining ? "trainingId" : "matchId";
+              const title = isTraining
+                ? "Träning"
+                : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
+              const lineup = roster.map((member) => {
+                const playerRegistration = registrationByUser.get(member.userId);
+                return {
+                  id: member.userId,
+                  name: member.user.name ?? "Okänd spelare",
+                  jerseyNo: member.jerseyNo,
+                  position: member.position,
+                  status: playerRegistration?.status ?? null,
+                  absenceReason: playerRegistration?.absenceReason ?? null,
+                };
+              });
+              const namesById = new Map(roster.map((member) => [member.userId, member.user.name ?? "Okänd spelare"]));
+              const lineupPlanData = item.lineupPlan?.data as LineupData | undefined;
 
-        {featuredEvents.map(({ kind, item, team, roster }) => {
-          const isTraining = kind === "training";
-          const registrationByUser = new Map(
-            item.registrations.map((candidate) => [candidate.userId, candidate]),
-          );
-          const registration = registrationByUser.get(user.id);
-          const respond = isTraining ? respondToTraining : respondToMatch;
-          const idField = isTraining ? "trainingId" : "matchId";
-          const title = isTraining
-            ? "Träning"
-            : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
-          const lineup = roster.map((member) => {
-            const playerRegistration = registrationByUser.get(member.userId);
-            return {
-              id: member.userId,
-              name: member.user.name ?? "Okänd spelare",
-              jerseyNo: member.jerseyNo,
-              position: member.position,
-              status: playerRegistration?.status ?? null,
-              absenceReason: playerRegistration?.absenceReason ?? null,
-            };
-          });
-          const namesById = new Map(roster.map((member) => [member.userId, member.user.name ?? "Okänd spelare"]));
-          const lineupPlanData = item.lineupPlan?.data as LineupData | undefined;
-
-          return (
-            <Card key={`${kind}:${item.id}`} className="overflow-hidden p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex w-12 shrink-0 flex-col items-center justify-center rounded-xl border border-divider bg-white/80 py-1.5 text-center">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
-                    {formatDateHeader(item.startsAt).slice(0, 3)}
-                  </span>
-                  <span className="text-lg font-bold leading-none text-ink">{item.startsAt.getDate()}</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
-                    <Eyebrow tone="heading">{isTraining ? "Nästa träning" : "Nästa match"}</Eyebrow>
-                    <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
-                      {team.name}
-                    </span>
+              return (
+                <Card key={`${kind}:${item.id}`} className="overflow-hidden p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex w-12 shrink-0 flex-col items-center justify-center rounded-xl border border-divider bg-white/80 py-1.5 text-center">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
+                        {formatDateHeader(item.startsAt).slice(0, 3)}
+                      </span>
+                      <span className="text-lg font-bold leading-none text-ink">{item.startsAt.getDate()}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+                        <Eyebrow tone="heading">{isTraining ? "Nästa träning" : "Nästa match"}</Eyebrow>
+                        <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
+                          {team.name}
+                        </span>
+                      </div>
+                      <h2 className="mt-0.5 text-base font-bold text-ink">{title}</h2>
+                      <p className="mt-0.5 text-sm text-ink-subtle">
+                        {formatDateHeader(item.startsAt)} · {formatTime(item.startsAt)} · {item.location}
+                      </p>
+                    </div>
                   </div>
-                  <h2 className="mt-0.5 text-base font-bold text-ink">{title}</h2>
-                  <p className="mt-0.5 text-sm text-ink-subtle">
-                    {formatDateHeader(item.startsAt)} · {formatTime(item.startsAt)} · {item.location}
-                  </p>
-                </div>
-              </div>
-              {lineupPlanData ? (
-                <details className="group mt-3 rounded-xl border border-divider bg-white/60 px-3 py-2">
-                  <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-ink">
-                    Visa lagindelning
-                    <span className="text-ink-subtle transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
-                  </summary>
-                  <LineupView data={lineupPlanData} namesById={namesById} />
-                </details>
-              ) : null}
-              <div className="mt-3 border-t border-divider pt-3">
-                <AttendanceControls
-                  formAction={respond}
-                  idField={idField}
-                  idValue={item.id}
-                  currentUserId={user.id}
-                  status={registration?.status ?? null}
-                  absenceReason={registration?.absenceReason ?? null}
-                  lineup={lineup}
-                />
-              </div>
-            </Card>
-          );
-        })}
+                  {lineupPlanData ? (
+                    <details className="group mt-3 rounded-xl border border-divider bg-white/60 px-3 py-2">
+                      <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-ink">
+                        Visa lagindelning
+                        <span className="text-ink-subtle transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
+                      </summary>
+                      <LineupView data={lineupPlanData} namesById={namesById} />
+                    </details>
+                  ) : null}
+                  <div className="mt-3 border-t border-divider pt-3">
+                    <AttendanceControls
+                      formAction={respond}
+                      idField={idField}
+                      idValue={item.id}
+                      currentUserId={user.id}
+                      status={registration?.status ?? null}
+                      absenceReason={registration?.absenceReason ?? null}
+                      lineup={lineup}
+                    />
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
         {week.length > 0 ? (
           <Card className="p-4">

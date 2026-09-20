@@ -58,80 +58,82 @@ export default async function Home() {
           )}
         </Card>
 
-        <Card className="p-5">
-          <Eyebrow tone="heading">Highlights</Eyebrow>
-          {highlightGroups.length > 0 ? (
-            <ExpandableList initialCount={3} moreLabel="Visa fler tillfällen" lessLabel="Visa färre tillfällen" className="mt-4 space-y-3">
-              {highlightGroups.map((group) => (
-                <details key={group.key} className="group rounded-xl border border-divider bg-white/60">
-                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
-                    <div className="min-w-0">
-                      <span className="block text-[15px] font-bold text-ink">{group.label}</span>
-                      <span className="text-[12px] text-ink-subtle">{formatDateHeader(group.date)} · {group.items.length} klipp</span>
-                    </div>
-                    <span className="shrink-0 text-xs font-bold text-signal group-open:hidden">Visa</span>
-                  </summary>
-                  <div className="divide-y divide-divider border-t border-divider px-4">
-                    {group.items.map((highlight) => (
-                      <a key={highlight.id} href={highlight.url} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-3 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signal text-sm text-white" aria-hidden="true">▶</span>
-                        <div className="min-w-0 flex-1">
-                          <span className="block text-[15px] font-bold text-ink underline decoration-divider underline-offset-4">
-                            {highlight.title}
-                          </span>
-                          <span className="text-[12px] text-ink-subtle">
-                            {HIGHLIGHT_TYPE_LABELS[highlight.type] ?? highlight.type} · Länkat av {highlight.author.name ?? "spelare"}
-                          </span>
-                          {highlight.players.length > 0 ? (
-                            <span className="block text-[12px] text-ink-subtle">
-                              {highlight.players
-                                .map((p) => `${HIGHLIGHT_ROLE_LABELS[p.role] ?? p.role}: ${p.user.name ?? "spelare"}`)
-                                .join(" · ")}
+        <div className="grid items-start gap-6 xl:grid-cols-2">
+          <Card className="p-5">
+            <Eyebrow tone="heading">Highlights</Eyebrow>
+            {highlightGroups.length > 0 ? (
+              <ExpandableList initialCount={3} moreLabel="Visa fler tillfällen" lessLabel="Visa färre tillfällen" className="mt-4 space-y-3">
+                {highlightGroups.map((group) => (
+                  <details key={group.key} className="group rounded-xl border border-divider bg-white/60">
+                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                      <div className="min-w-0">
+                        <span className="block text-[15px] font-bold text-ink">{group.label}</span>
+                        <span className="text-[12px] text-ink-subtle">{formatDateHeader(group.date)} · {group.items.length} klipp</span>
+                      </div>
+                      <span className="shrink-0 text-xs font-bold text-signal group-open:hidden">Visa</span>
+                    </summary>
+                    <div className="divide-y divide-divider border-t border-divider px-4">
+                      {group.items.map((highlight) => (
+                        <a key={highlight.id} href={highlight.url} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-3 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-signal text-sm text-white" aria-hidden="true">▶</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="block text-[15px] font-bold text-ink underline decoration-divider underline-offset-4">
+                              {highlight.title}
                             </span>
-                          ) : null}
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </details>
-              ))}
-            </ExpandableList>
-          ) : (
-            <p className="mt-3 text-sm text-ink-subtle">Inga highlights ännu.</p>
-          )}
-        </Card>
+                            <span className="text-[12px] text-ink-subtle">
+                              {HIGHLIGHT_TYPE_LABELS[highlight.type] ?? highlight.type} · Länkat av {highlight.author.name ?? "spelare"}
+                            </span>
+                            {highlight.players.length > 0 ? (
+                              <span className="block text-[12px] text-ink-subtle">
+                                {highlight.players
+                                  .map((p) => `${HIGHLIGHT_ROLE_LABELS[p.role] ?? p.role}: ${p.user.name ?? "spelare"}`)
+                                  .join(" · ")}
+                              </span>
+                            ) : null}
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </ExpandableList>
+            ) : (
+              <p className="mt-3 text-sm text-ink-subtle">Inga highlights ännu.</p>
+            )}
+          </Card>
 
-        <Card className="p-5">
-          <Eyebrow tone="heading">Senast spelat</Eyebrow>
-          {latest ? (
-            <div className="mt-3 flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-ink text-white">
-                <span className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-75">
-                  {formatDateHeader(latest.item.startsAt).slice(0, 3)}
-                </span>
-                <span className="text-xl font-bold leading-none">{latest.item.startsAt.getDate()}</span>
+          <Card className="p-5">
+            <Eyebrow tone="heading">Senast spelat</Eyebrow>
+            {latest ? (
+              <div className="mt-3 flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-ink text-white">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-75">
+                    {formatDateHeader(latest.item.startsAt).slice(0, 3)}
+                  </span>
+                  <span className="text-xl font-bold leading-none">{latest.item.startsAt.getDate()}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-lg font-bold text-ink">
+                    {latest.kind === "training"
+                      ? "Träning"
+                      : `${latest.item.isHome ? "Hemma" : "Borta"} vs ${latest.item.opponent}`}
+                  </div>
+                  <div className="mt-1 text-sm text-ink-subtle">
+                    {formatDateHeader(latest.item.startsAt)} · {formatTime(latest.item.startsAt)}
+                  </div>
+                  <div className="mt-0.5 text-sm text-ink-subtle">{latest.item.location}</div>
+                </div>
+                {latest.kind === "match" && latest.item.homeScore !== null && latest.item.awayScore !== null ? (
+                  <div className="shrink-0 text-2xl font-bold text-signal">
+                    {latest.item.homeScore}–{latest.item.awayScore}
+                  </div>
+                ) : null}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-lg font-bold text-ink">
-                  {latest.kind === "training"
-                    ? "Träning"
-                    : `${latest.item.isHome ? "Hemma" : "Borta"} vs ${latest.item.opponent}`}
-                </div>
-                <div className="mt-1 text-sm text-ink-subtle">
-                  {formatDateHeader(latest.item.startsAt)} · {formatTime(latest.item.startsAt)}
-                </div>
-                <div className="mt-0.5 text-sm text-ink-subtle">{latest.item.location}</div>
-              </div>
-              {latest.kind === "match" && latest.item.homeScore !== null && latest.item.awayScore !== null ? (
-                <div className="shrink-0 text-2xl font-bold text-signal">
-                  {latest.item.homeScore}–{latest.item.awayScore}
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-ink-subtle">Ingen spelad träning eller match hittades.</p>
-          )}
-        </Card>
+            ) : (
+              <p className="mt-3 text-sm text-ink-subtle">Ingen spelad träning eller match hittades.</p>
+            )}
+          </Card>
+        </div>
       </main>
     </div>
   );

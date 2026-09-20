@@ -25,7 +25,7 @@ export default async function MorePage() {
       <main className="space-y-7 px-5 pb-10">
         <section>
           <Eyebrow>Genvägar</Eyebrow>
-          <div className="mt-3 grid grid-cols-2 gap-3 md:gap-4">
+          <div className="mt-3 grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
             {cards.map(({ href, label, icon: Icon, badge }) => (
               <Link key={href} href={href} className="flex min-h-32 flex-col justify-between gap-4 rounded-2xl border border-divider bg-white/[0.92] p-5 backdrop-blur-[2px] transition-colors hover:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
                 <span className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-white ${badge}`}>

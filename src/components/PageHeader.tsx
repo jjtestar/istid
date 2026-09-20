@@ -12,7 +12,7 @@ export function PageHeader({
   back?: { href: string; label?: string };
 }) {
   return (
-    <div className="px-5 pb-4 pt-6 md:px-8 md:pt-8">
+    <div className="px-5 pb-4 pt-6 md:px-8 md:pb-6 md:pt-10">
       {back ? (
         <Link
           href={back.href}

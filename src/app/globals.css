@@ -18,6 +18,9 @@
   --warm: #c1121f;
   --radius-card: 16px;
   --radius-control: 12px;
+  --veil: rgb(255 255 255 / 72%);
+  --veil-deep: rgb(255 255 255 / 72%);
+  --card-shadow: 0 1px 2px rgb(13 59 102 / 5%), 0 14px 34px -22px rgb(13 59 102 / 35%);
 
   --color-surface: var(--bg);
   --color-surface-raised: var(--surface-raised);
@@ -56,6 +59,9 @@
   --warm: #c9a979;
   --radius-card: 36px;
   --radius-control: 18px;
+  --veil: rgb(10 17 19 / 88%);
+  --veil-deep: rgb(13 20 22 / 84%);
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 18px 38px -26px rgb(0 0 0 / 65%);
 
   --color-surface: var(--bg);
   --color-surface-raised: var(--surface-raised);
@@ -108,29 +114,58 @@ body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
+:root {
+  /* Must match the sidebar's own width (w-60) in BottomNav.tsx. */
+  --sidebar-width: 15rem;
+  --page-max: 64rem;
+}
+
 .app-shell { min-height: calc(100dvh - env(safe-area-inset-top, 0px)); }
 .app-content { max-width: 80rem; }
 .app-bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
 @media (min-width: 768px) {
   /*
-   * .app-content is centered (mx-auto, from the Tailwind class in layout.tsx)
-   * within the *full* viewport. With the sidebar present that centering and
-   * the old padding-left: 15rem fought each other: the box centered as if
-   * there were no sidebar, then got pushed right by its own padding *inside*
-   * that already-centered box — wasting a chunk of width behind the sidebar
-   * and leaving an equally pointless gap on the right that grew with the
-   * screen. Anchor the box to the sidebar's right edge instead (margin-left,
-   * not padding, so it doesn't also inflate the box past max-width) and let
-   * the one remaining auto margin (from mx-auto) soak up whatever's left on
-   * the right — no separate override needed for that side.
+   * The sidebar is fixed, so the content box starts where the sidebar ends
+   * (margin-left, not padding, so the box itself isn't inflated past its own
+   * max-width). Everything to the right of the sidebar is the page's region:
+   * the box spans all of it, and each page inside is centered within that
+   * region and capped at --page-max. Wide screens then gain even margins on
+   * both sides instead of one growing gutter on the right.
    */
-  body:has(.desktop-navigation) .app-content { min-height: 100dvh; margin-left: 15rem; max-width: calc(80rem - 15rem); }
-  /* Keep the decorative rink backdrop centered on the same region as the content, not the whole viewport. */
-  body:has(.desktop-navigation) .app-background { left: calc(50% + 7.5rem); }
+  body:has(.desktop-navigation) .app-content {
+    min-height: 100dvh;
+    margin-left: var(--sidebar-width);
+    /* w-full makes the box as wide as the body, so the max-width has to give
+       the sidebar's width back — otherwise margin-left pushes the box off the
+       right edge and the page scrolls sideways. */
+    max-width: calc(100% - var(--sidebar-width));
+  }
+
+  body:has(.desktop-navigation) .app-content > * {
+    width: 100%;
+    max-width: var(--page-max);
+    margin-inline: auto;
+  }
+
+  /* Keep the decorative rink backdrop on the same region as the content. */
+  body:has(.desktop-navigation) .app-background {
+    left: calc(50% + var(--sidebar-width) / 2);
+    width: min(calc(100% - var(--sidebar-width)), calc(var(--page-max) + 10rem));
+  }
+
+  /* The backdrop covers far more area on a desktop screen, so veil it a touch
+     more heavily to keep card text calm against it. */
+  :root { --veil: rgb(255 255 255 / 84%); --veil-deep: rgb(255 255 255 / 82%); }
+  [data-theme="mint"] { --veil: rgb(10 17 19 / 92%); --veil-deep: rgb(13 20 22 / 89%); }
+
   .app-bottom-nav { display: none; }
-  .app-background { width: min(100%, 80rem); }
+  .app-background { width: min(100%, var(--page-max)); }
   .app-content main { width: 100%; padding-left: 2rem; padding-right: 2rem; }
+
+  /* A bigger canvas carries a bigger type scale. */
+  .page-title { font-size: 2.125rem; }
+  .section-title { font-size: 1.375rem; }
 }
 
 .pwa-notice {
@@ -198,6 +233,10 @@ body {
     letter-spacing: -0.015em;
   }
 
+  .card-surface {
+    box-shadow: var(--card-shadow);
+  }
+
   .body-copy {
     font-size: 1rem;
     line-height: 1.65;
@@ -226,7 +265,7 @@ body {
   transform: translateX(-50%);
   pointer-events: none;
   background-image:
-    linear-gradient(rgb(255 255 255 / 72%), rgb(255 255 255 / 72%)),
+    linear-gradient(var(--veil), var(--veil-deep)),
     url("/rink-background.png");
   background-position: center;
   background-repeat: no-repeat;
@@ -235,9 +274,6 @@ body {
 
 [data-theme="mint"] .app-background {
   background-color: var(--bg-deep);
-  background-image:
-    linear-gradient(rgb(10 17 19 / 88%), rgb(13 20 22 / 84%)),
-    url("/rink-background.png");
 }
 
 /* Existing screens use white utility surfaces. Remap those surfaces in the dark theme. */
