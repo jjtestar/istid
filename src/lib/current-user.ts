@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const DEFAULT_TEAM_SLUG = "kumla";
+/** Välkomstformuläret som varje nytt konto passerar innan appen öppnas. */
+export const ONBOARDING_PATH = "/valkommen";
 export const DEFAULT_SEASON = "2026/27";
 
 export function teamSlug(name: string) {
@@ -32,13 +34,23 @@ export async function getSessionUser() {
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
-    select: { id: true, name: true, role: true, isSuperAdmin: true, isActive: true, accessApproved: true },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      isSuperAdmin: true,
+      isActive: true,
+      accessApproved: true,
+      onboardedAt: true,
+    },
   });
 
   // Reachable with a still-valid session cookie once access is revoked, so it
   // has to be a redirect rather than an error page. /login recognises the stale
   // session and offers to sign out.
   if (!user || !user.isActive || !user.accessApproved) redirect("/login");
+  // Nya konton fyller i välkomstformuläret innan de släpps in i appen.
+  if (!user.onboardedAt) redirect(ONBOARDING_PATH);
 
   return user;
 }
@@ -55,6 +67,7 @@ export async function getCurrentUserWithTeam() {
   });
 
   if (!user || !user.isActive || !user.accessApproved) redirect("/login");
+  if (!user.onboardedAt) redirect(ONBOARDING_PATH);
 
   const availableTeams =
     user.role === "ADMIN" || user.isSuperAdmin

@@ -30,7 +30,7 @@ function isActive(pathname: string, href: string, related: string[] = []) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  if (["/login", "/registrera", "/integritet"].some((path) => pathname.startsWith(path))) return null;
+  if (["/login", "/registrera", "/valkommen", "/integritet"].some((path) => pathname.startsWith(path))) return null;
 
   return (
     <>

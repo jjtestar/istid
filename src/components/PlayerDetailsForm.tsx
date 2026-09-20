@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { updatePlayerDetails } from "@/app/actions";
+import { JerseyNumberPicker, type TakenJersey } from "@/components/JerseyNumberPicker";
+import { HEIGHT_MAX, HEIGHT_MIN, STICK_SIDE_LABELS, WEIGHT_MAX, WEIGHT_MIN } from "@/lib/player";
 
 type StickSide = "LEFT" | "RIGHT" | "";
 
@@ -11,6 +13,8 @@ type PlayerDetails = {
   weightKg: string;
   stickSide: StickSide;
   jerseyNo: string;
+  phone: string;
+  emergencyContact: string;
 };
 
 function SaveButton() {
@@ -37,14 +41,22 @@ export function PlayerDetailsForm({
   initialWeightKg,
   initialStickSide,
   initialJerseyNo,
+  initialPhone,
+  initialEmergencyContact,
   position,
+  preferredPosition,
+  takenJerseys,
   hasTeam,
 }: {
   initialHeightCm: number | null;
   initialWeightKg: number | null;
   initialStickSide: "LEFT" | "RIGHT" | null;
   initialJerseyNo: number | null;
+  initialPhone: string | null;
+  initialEmergencyContact: string | null;
   position: string | null;
+  preferredPosition: string | null;
+  takenJerseys: TakenJersey[];
   hasTeam: boolean;
 }) {
   const initialDetails: PlayerDetails = {
@@ -52,6 +64,8 @@ export function PlayerDetailsForm({
     weightKg: initialWeightKg?.toString() ?? "",
     stickSide: initialStickSide ?? "",
     jerseyNo: initialJerseyNo?.toString() ?? "",
+    phone: initialPhone ?? "",
+    emergencyContact: initialEmergencyContact ?? "",
   };
   const hasSavedDetails = Object.values(initialDetails).some(Boolean);
   const [details, setDetails] = useState<PlayerDetails>(initialDetails);
@@ -59,27 +73,34 @@ export function PlayerDetailsForm({
     hasSavedDetails ? initialDetails : null,
   );
   const [editing, setEditing] = useState(!hasSavedDetails);
+  const [error, setError] = useState("");
 
   function updateDetail<Key extends keyof PlayerDetails>(key: Key, value: PlayerDetails[Key]) {
     setDetails((current) => ({ ...current, [key]: value }));
   }
 
   async function saveDetails(formData: FormData) {
-    const saved = await updatePlayerDetails(formData);
-    if (!saved) return;
+    const result = await updatePlayerDetails(formData);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
 
+    setError("");
     setSavedDetails(details);
     setEditing(false);
   }
 
   function editDetails() {
     if (savedDetails) setDetails(savedDetails);
+    setError("");
     setEditing(true);
   }
 
   function cancelEditing() {
     if (!savedDetails) return;
     setDetails(savedDetails);
+    setError("");
     setEditing(false);
   }
 
@@ -105,20 +126,35 @@ export function PlayerDetailsForm({
             <div>
               <dt className="font-bold text-ink">Fattning</dt>
               <dd className="text-ink-subtle">
-                {savedDetails.stickSide === "LEFT"
-                  ? "Vänster"
-                  : savedDetails.stickSide === "RIGHT"
-                    ? "Höger"
-                    : "Inte angiven"}
+                {savedDetails.stickSide === ""
+                  ? "Inte angiven"
+                  : STICK_SIDE_LABELS[savedDetails.stickSide]}
               </dd>
             </div>
             <div>
               <dt className="font-bold text-ink">Tröjnummer</dt>
-              <dd className="text-ink-subtle">{displayValue(savedDetails.jerseyNo)}</dd>
+              <dd className="text-ink-subtle">
+                {savedDetails.jerseyNo ? `#${savedDetails.jerseyNo}` : "Inte valt"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold text-ink">Telefon</dt>
+              <dd className="break-all text-ink-subtle">{displayValue(savedDetails.phone)}</dd>
+            </div>
+            <div>
+              <dt className="font-bold text-ink">Anhörig</dt>
+              <dd className="break-words text-ink-subtle">
+                {displayValue(savedDetails.emergencyContact)}
+              </dd>
             </div>
             <div className="col-span-2">
               <dt className="font-bold text-ink">Position</dt>
-              <dd className="text-ink-subtle">{position ?? "Inte angiven"}</dd>
+              <dd className="text-ink-subtle">
+                {position ?? "Inte angiven"}
+                {preferredPosition && preferredPosition !== position
+                  ? ` · önskemål: ${preferredPosition}`
+                  : ""}
+              </dd>
             </div>
           </dl>
         </div>
@@ -142,8 +178,8 @@ export function PlayerDetailsForm({
             <input
               name="heightCm"
               type="number"
-              min={80}
-              max={230}
+              min={HEIGHT_MIN}
+              max={HEIGHT_MAX}
               inputMode="numeric"
               value={details.heightCm}
               onChange={(event) => updateDetail("heightCm", event.target.value)}
@@ -160,8 +196,8 @@ export function PlayerDetailsForm({
             <input
               name="weightKg"
               type="number"
-              min={20}
-              max={250}
+              min={WEIGHT_MIN}
+              max={WEIGHT_MAX}
               step="0.1"
               inputMode="decimal"
               value={details.weightKg}
@@ -186,29 +222,59 @@ export function PlayerDetailsForm({
             <option value="RIGHT">Höger</option>
           </select>
         </label>
+        <label className="col-span-2 block">
+          <span className="mb-1.5 block text-sm font-bold text-ink">Telefon</span>
+          <input
+            name="phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            value={details.phone}
+            onChange={(event) => updateDetail("phone", event.target.value)}
+            className="h-12 w-full rounded-xl border border-divider bg-white px-3 text-base text-ink outline-none focus:border-ink"
+          />
+        </label>
+        <label className="col-span-2 block">
+          <span className="mb-1.5 block text-sm font-bold text-ink">Anhörig vid olycka</span>
+          <input
+            name="emergencyContact"
+            maxLength={120}
+            placeholder="Namn och telefonnummer"
+            value={details.emergencyContact}
+            onChange={(event) => updateDetail("emergencyContact", event.target.value)}
+            className="h-12 w-full rounded-xl border border-divider bg-white px-3 text-base text-ink outline-none focus:border-ink"
+          />
+        </label>
 
-        {hasTeam ? (
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-bold text-ink">Tröjnummer</span>
-            <input
-              name="jerseyNo"
-              type="number"
-              min={0}
-              max={99}
-              value={details.jerseyNo}
-              onChange={(event) => updateDetail("jerseyNo", event.target.value)}
-              className="h-12 w-full rounded-xl border border-divider bg-white px-3 text-base text-ink outline-none focus:border-ink"
-            />
-          </label>
-        ) : null}
-        <div className={hasTeam ? "block" : "col-span-2 block"}>
+        <div className="col-span-2">
           <span className="mb-1.5 block text-sm font-bold text-ink">Position</span>
           <div className="flex h-12 items-center rounded-xl border border-divider bg-divider/30 px-3 text-base text-ink">
             {position ?? "Inte angiven"}
           </div>
-          <span className="mt-1.5 block text-[13px] text-ink-subtle">Positionen anges av en admin.</span>
+          <span className="mt-1.5 block text-[13px] text-ink-subtle">
+            Positionen anges av en admin
+            {preferredPosition ? ` · ditt önskemål: ${preferredPosition}` : ""}.
+          </span>
         </div>
       </div>
+
+      {hasTeam ? (
+        <div className="border-t border-divider pt-4">
+          <span className="mb-2 block text-sm font-bold text-ink">Tröjnummer</span>
+          <JerseyNumberPicker
+            takenJerseys={takenJerseys}
+            value={details.jerseyNo === "" ? null : Number(details.jerseyNo)}
+            onChange={(value) => updateDetail("jerseyNo", value === null ? "" : String(value))}
+            emptyLabel="Inget nummer valt"
+          />
+        </div>
+      ) : null}
+
+      {error ? (
+        <p role="alert" className="rounded-xl bg-rink-line-red px-3 py-2.5 text-sm font-semibold text-signal">
+          {error}
+        </p>
+      ) : null}
 
       <div className="grid gap-2">
         <SaveButton />

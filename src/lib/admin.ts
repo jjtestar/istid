@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { ONBOARDING_PATH } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 export async function requireAdmin() {
@@ -7,6 +8,7 @@ export async function requireAdmin() {
   if (!session?.user?.email) redirect("/login");
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user?.isActive || !user.accessApproved || (user.role !== "ADMIN" && !user.isSuperAdmin)) redirect("/");
+  if (!user.onboardedAt) redirect(ONBOARDING_PATH);
   return user;
 }
 

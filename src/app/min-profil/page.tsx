@@ -5,12 +5,14 @@ import { SeasonParticipationForm } from "@/components/SeasonParticipationForm";
 import { Card, Eyebrow } from "@/components/ui";
 import { signOut } from "@/lib/auth";
 import { DEFAULT_SEASON, getCurrentUserWithTeam } from "@/lib/current-user";
+import { getTakenJerseyNumbers } from "@/lib/onboarding";
 import Link from "next/link";
 
 const trainingDayLabels = { TUESDAY: "tisdag", THURSDAY: "torsdag", SATURDAY: "lördag" } as const;
 
 export default async function MinProfilPage() {
   const { user, team, membership } = await getCurrentUserWithTeam();
+  const takenJerseys = team ? await getTakenJerseyNumbers(team.id, user.id) : [];
 
   return (
     <div>
@@ -44,7 +46,11 @@ export default async function MinProfilPage() {
             initialWeightKg={user.weightKg}
             initialStickSide={user.stickSide}
             initialJerseyNo={membership?.jerseyNo ?? null}
+            initialPhone={user.phone}
+            initialEmergencyContact={user.emergencyContact}
             position={membership?.position ?? null}
+            preferredPosition={membership?.preferredPosition ?? null}
+            takenJerseys={takenJerseys}
             hasTeam={Boolean(team && membership)}
           />
         </Card>

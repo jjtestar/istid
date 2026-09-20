@@ -5,13 +5,21 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { DEFAULT_SEASON, getCurrentUser, getCurrentUserWithTeam, teamSlug } from "@/lib/current-user";
+import {
+  isValidPhone,
+  normalizePhone,
+  parseHeightCm,
+  parseJerseyNo,
+  parseStickSide,
+  parseWeightKg,
+  PLAYER_POSITIONS,
+} from "@/lib/player";
 import { prisma } from "@/lib/prisma";
 import type { RsvpResult } from "@/lib/rsvp";
 
 const RSVP_STATUSES = new Set(["GOING", "NOT_GOING"]);
 const ABSENCE_REASONS = new Set(["TIRED", "SICK", "VACATION", "OTHER"]);
-const PLAYER_POSITIONS = new Set(["Forward", "Back", "Målvakt"]);
-const STICK_SIDES = new Set(["LEFT", "RIGHT"]);
+const POSITIONS = new Set<string>(PLAYER_POSITIONS);
 const PARTICIPATION_TYPES = new Set(["TRAINING_AND_MATCHES", "TRAINING_ONLY"]);
 const TRAINING_DAYS = new Set(["TUESDAY", "THURSDAY", "SATURDAY"]);
 
@@ -132,56 +140,69 @@ export async function respondToMatch(formData: FormData) {
   return saveRsvp("match", String(formData.get("matchId") ?? ""), formData);
 }
 
-export async function updatePlayerDetails(formData: FormData) {
-  const { user, membership } = await getCurrentUserWithTeam();
-  const jerseyValue = String(formData.get("jerseyNo") ?? "").trim();
-  const heightValue = String(formData.get("heightCm") ?? "").trim();
-  const weightValue = String(formData.get("weightKg") ?? "").trim();
-  const requestedStickSide = String(formData.get("stickSide") ?? "").trim();
+export type PlayerDetailsResult = { ok: true } | { ok: false; error: string };
 
-  const parsedJerseyNo = jerseyValue === "" ? null : Number(jerseyValue);
-  const jerseyNo =
-    parsedJerseyNo !== null && Number.isInteger(parsedJerseyNo) && parsedJerseyNo >= 0 && parsedJerseyNo <= 99
-      ? parsedJerseyNo
-      : parsedJerseyNo === null
-        ? null
-        : undefined;
-  const parsedHeightCm = heightValue === "" ? null : Number(heightValue);
-  const heightCm =
-    parsedHeightCm !== null && Number.isInteger(parsedHeightCm) && parsedHeightCm >= 80 && parsedHeightCm <= 230
-      ? parsedHeightCm
-      : parsedHeightCm === null
-        ? null
-        : undefined;
-  const parsedWeightKg = weightValue === "" ? null : Number(weightValue);
-  const weightKg =
-    parsedWeightKg !== null && Number.isFinite(parsedWeightKg) && parsedWeightKg >= 20 && parsedWeightKg <= 250
-      ? Math.round(parsedWeightKg * 10) / 10
-      : parsedWeightKg === null
-        ? null
-        : undefined;
-  const stickSide = STICK_SIDES.has(requestedStickSide)
-    ? (requestedStickSide as "LEFT" | "RIGHT")
-    : requestedStickSide === ""
-      ? null
-      : undefined;
+export async function updatePlayerDetails(formData: FormData): Promise<PlayerDetailsResult> {
+  const { user, team, membership } = await getCurrentUserWithTeam();
+
+  const jerseyNo = parseJerseyNo(String(formData.get("jerseyNo") ?? ""));
+  const heightCm = parseHeightCm(String(formData.get("heightCm") ?? ""));
+  const weightKg = parseWeightKg(String(formData.get("weightKg") ?? ""));
+  const stickSide = parseStickSide(String(formData.get("stickSide") ?? ""));
+  const phone = normalizePhone(String(formData.get("phone") ?? ""));
+  const emergencyContact = String(formData.get("emergencyContact") ?? "").trim();
 
   if (jerseyNo === undefined || heightCm === undefined || weightKg === undefined || stickSide === undefined) {
-    return false;
+    return { ok: false, error: "Något värde ligger utanför det tillåtna intervallet." };
+  }
+  if (phone !== "" && !isValidPhone(phone)) {
+    return { ok: false, error: "Telefonnumret ser inte ut att stämma." };
+  }
+  if (emergencyContact.length > 120) {
+    return { ok: false, error: "Anhörigkontakten får vara högst 120 tecken." };
   }
 
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: user.id }, data: { heightCm, weightKg, stickSide } }),
-    ...(membership
-      ? [prisma.teamMember.update({ where: { id: membership.id }, data: { jerseyNo } })]
-      : []),
-  ]);
+  const userData = {
+    heightCm,
+    weightKg,
+    stickSide,
+    phone: phone || null,
+    emergencyContact: emergencyContact || null,
+  };
+
+  if (!membership || !team) {
+    await prisma.user.update({ where: { id: user.id }, data: userData });
+  } else {
+    try {
+      await prisma.$transaction(
+        async (tx) => {
+          if (jerseyNo !== null) {
+            const taken = await tx.teamMember.findFirst({
+              where: { teamId: team.id, jerseyNo, NOT: { id: membership.id } },
+              select: { id: true },
+            });
+            if (taken) throw new Error("JERSEY_TAKEN");
+          }
+          await tx.user.update({ where: { id: user.id }, data: userData });
+          await tx.teamMember.update({ where: { id: membership.id }, data: { jerseyNo } });
+        },
+        // Samma kapplöpning som i välkomstformuläret: utan unik begränsning i
+        // databasen behöver kontrollen en serialiserbar transaktion.
+        { isolationLevel: "Serializable" },
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message === "JERSEY_TAKEN") {
+        return { ok: false, error: "Tröjnumret är redan taget i laget. Välj ett annat." };
+      }
+      return { ok: false, error: "Uppgifterna kunde inte sparas. Försök igen." };
+    }
+  }
 
   revalidatePath("/");
   revalidatePath("/lag");
   revalidatePath("/statistik");
   revalidatePath("/min-profil");
-  return true;
+  return { ok: true };
 }
 
 export async function updateSeasonParticipation(formData: FormData) {
@@ -236,7 +257,7 @@ export async function updateMemberPosition(formData: FormData) {
   const requestedPosition = String(formData.get("position") ?? "").trim();
 
   if (user.role !== "ADMIN" || !team || !membershipId) return;
-  if (requestedPosition !== "" && !PLAYER_POSITIONS.has(requestedPosition)) return;
+  if (requestedPosition !== "" && !POSITIONS.has(requestedPosition)) return;
 
   await prisma.teamMember.updateMany({
     where: { id: membershipId, teamId: team.id },

@@ -105,8 +105,8 @@ export default function IntegritetPage() {
             <section>
               <h2 className="font-bold text-ink">Vilka uppgifter?</h2>
               <p>
-                Namn, e-post, roll, längd, vikt, fattning, lag, säsong, position och
-                tröjnummer. Även anmälningar, frånvaroorsaker, närvaro, matchstatistik och
+                Namn, e-post, telefonnummer, kontaktuppgift till anhörig, roll, längd, vikt,
+                fattning, lag, säsong, position (inklusive önskad position) och tröjnummer. Även anmälningar, frånvaroorsaker, närvaro, matchstatistik och
                 höjdpunkter du publicerar kan sparas. Tekniska sessionsuppgifter används för
                 säker inloggning.
               </p>
@@ -142,8 +142,9 @@ export default function IntegritetPage() {
             <section>
               <h2 className="font-bold text-ink">Krav, profilering och kakor</h2>
               <p>
-                E-post och namn behövs för konto och lagadministration; utan dem kan tjänsten
-                inte användas. Övriga spelaruppgifter är frivilliga. Femtekedjan använder inte
+                E-post, namn och telefonnummer behövs för konto och lagadministration; utan dem
+                kan tjänsten inte användas. Övriga spelaruppgifter, till exempel längd, vikt och
+                anhörigkontakt, är frivilliga. Femtekedjan använder inte
                 automatiserat beslutsfattande eller profilering. Endast nödvändiga
                 inloggnings- och sessionskakor används i den här versionen.
               </p>
