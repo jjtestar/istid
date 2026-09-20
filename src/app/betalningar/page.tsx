@@ -67,7 +67,7 @@ export default async function PaymentsPage({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-bold">{p.title}</p>
-                    <p className="text-sm text-ink-subtle">{p.team.name} · förfaller {date(p.dueDate)}</p>
+                    <p className="text-sm text-ink-subtle">{teams.length > 1 ? `${p.team.name} · ` : ""}förfaller {date(p.dueDate)}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-bold">{money(p.amountOre)}</p>

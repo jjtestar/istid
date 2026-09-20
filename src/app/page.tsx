@@ -58,7 +58,7 @@ export default async function Home() {
           )}
         </Card>
 
-        <div className="grid items-start gap-6 xl:grid-cols-2">
+        <div className="grid gap-6 xl:grid-cols-2">
           <Card className="p-5">
             <Eyebrow tone="heading">Highlights</Eyebrow>
             {highlightGroups.length > 0 ? (

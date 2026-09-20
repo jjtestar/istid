@@ -125,7 +125,7 @@ export default async function StatistikPage({
             </Card>
 
             {selectedPlayer && individualStats ? (
-              <>
+              <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
                 <Card className="overflow-hidden p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
@@ -212,7 +212,7 @@ export default async function StatistikPage({
                     ))
                   )}
                 </Card>
-              </>
+              </div>
             ) : (
               <Card className="p-4 text-sm text-ink-subtle">Ingen spelarstatistik finns ännu.</Card>
             )}
@@ -220,7 +220,7 @@ export default async function StatistikPage({
         ) : null}
 
         {view === "topplistor" ? (
-          <div className="space-y-4">
+          <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
             {leaderboards.map((leaderboard) => (
               <Card key={leaderboard.field} className="overflow-hidden">
                 <div className="px-4 pb-2 pt-4">

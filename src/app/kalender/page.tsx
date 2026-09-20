@@ -110,7 +110,7 @@ export default async function KalenderPage({
           {Array.from(groups.values()).map(({ date, events: dayEvents }) => (
             <section key={dayKey(date)}>
               <Eyebrow>{formatDateHeader(date)}</Eyebrow>
-              <div className="mt-2 space-y-2.5">
+              <div className="mt-2 grid gap-2.5 xl:grid-cols-2">
                 {dayEvents.map(({ kind, item }) => {
                   const going = item.registrations[0]?.status === "GOING";
                   const title =

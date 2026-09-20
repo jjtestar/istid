@@ -69,7 +69,7 @@ export default async function AnmalanPage() {
         ) : (
           /* Two per row once there is room for it, so a team with several
              upcoming activities doesn't become one long scroll on desktop. */
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className={`grid gap-6 ${featuredEvents.length > 1 ? "xl:grid-cols-2" : ""}`}>
             {featuredEvents.map(({ kind, item, team, roster }) => {
               const isTraining = kind === "training";
               const registrationByUser = new Map(
@@ -107,9 +107,11 @@ export default async function AnmalanPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
                         <Eyebrow tone="heading">{isTraining ? "Nästa träning" : "Nästa match"}</Eyebrow>
-                        <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
-                          {team.name}
-                        </span>
+                        {teams.length > 1 ? (
+                          <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
+                            {team.name}
+                          </span>
+                        ) : null}
                       </div>
                       <h2 className="mt-0.5 text-base font-bold text-ink">{title}</h2>
                       <p className="mt-0.5 text-sm text-ink-subtle">

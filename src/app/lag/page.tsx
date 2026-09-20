@@ -42,11 +42,18 @@ export default async function LagPage() {
         </Card>
 
         <Card className="overflow-hidden">
-          <ExpandableList initialCount={8} moreLabel="Visa fler spelare" lessLabel="Visa färre spelare">
-            {roster.map((member, index) => (
+          <ExpandableList
+            initialCount={8}
+            moreLabel="Visa fler spelare"
+            lessLabel="Visa färre spelare"
+            listClassName="xl:grid xl:grid-cols-2"
+          >
+            {roster.map((member) => (
               <div
                 key={member.id}
-                className={`flex items-center gap-3.5 px-4 py-3.5 ${index === 0 ? "" : "border-t border-divider"}`}
+                /* The dividers are CSS-driven so they follow the columns: no rule
+                   above the first row of either column, and one between them. */
+                className="flex items-center gap-3.5 border-t border-divider px-4 py-3.5 first:border-t-0 xl:[&:nth-child(2)]:border-t-0 xl:[&:nth-child(odd)]:border-r"
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-bold text-white">
                   {member.jerseyNo ?? "–"}

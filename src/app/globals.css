@@ -160,7 +160,12 @@ body {
   [data-theme="mint"] { --veil: rgb(10 17 19 / 92%); --veil-deep: rgb(13 20 22 / 89%); }
 
   .app-bottom-nav { display: none; }
-  .app-background { width: min(100%, var(--page-max)); }
+  .app-background {
+    width: min(100%, var(--page-max));
+    /* On a short page the rink would otherwise fill the whole window and read
+       as a photo with a few cards on it; fading it out keeps it a backdrop. */
+    mask-image: linear-gradient(to bottom, #000 45%, transparent 95%);
+  }
   .app-content main { width: 100%; padding-left: 2rem; padding-right: 2rem; }
 
   /* A bigger canvas carries a bigger type scale. */
