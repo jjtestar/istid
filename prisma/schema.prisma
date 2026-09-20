@@ -51,19 +51,19 @@ enum HighlightPlayerRole {
 }
 
 model User {
-  id            String     @id @default(cuid())
-  name          String?
-  email         String     @unique
-  passwordHash  String?
-  role          Role       @default(PLAYER)
-  heightCm      Int?
-  weightKg      Float?
-  stickSide     StickSide?
-  emailVerified DateTime?
-  image         String?
-  createdAt     DateTime   @default(now())
-  isActive      Boolean    @default(true)
-  accessApproved Boolean   @default(false)
+  id             String     @id @default(cuid())
+  name           String?
+  email          String     @unique
+  passwordHash   String?
+  role           Role       @default(PLAYER)
+  heightCm       Int?
+  weightKg       Float?
+  stickSide      StickSide?
+  emailVerified  DateTime?
+  image          String?
+  createdAt      DateTime   @default(now())
+  isActive       Boolean    @default(true)
+  accessApproved Boolean    @default(false)
   isSuperAdmin   Boolean    @default(false)
   theme          String     @default("classic")
 
@@ -73,13 +73,15 @@ model User {
   matchStats            MatchStat[]
   highlights            Highlight[]
   highlightAppearances  HighlightPlayer[]
-  createdInviteCodes    InviteCode[] @relation("InviteCreator")
-  usedInviteCode        InviteCode?  @relation("InviteUser")
+  createdInviteCodes    InviteCode[]           @relation("InviteCreator")
+  usedInviteCode        InviteCode?            @relation("InviteUser")
   payments              Payment[]
-  adminAuditLogs        AdminAuditLog[] @relation("AuditActor")
-  playerRequests         PlayerRequest[] @relation("PlayerRequestCreator")
-  lineupPlans            LineupPlan[]    @relation("LineupUpdater")
-  announcements          Announcement[]  @relation("AnnouncementAuthor")
+  adminAuditLogs        AdminAuditLog[]        @relation("AuditActor")
+  playerRequests        PlayerRequest[]        @relation("PlayerRequestCreator")
+  lineupPlans           LineupPlan[]           @relation("LineupUpdater")
+  announcements         Announcement[]         @relation("AnnouncementAuthor")
+  passwordResetCodes    PasswordResetCode[]    @relation("PasswordResetTarget")
+  issuedPasswordResets  PasswordResetCode[]    @relation("PasswordResetIssuer")
 }
 
 model Team {
@@ -89,15 +91,15 @@ model Team {
   createdAt  DateTime  @default(now())
   archivedAt DateTime?
 
-  members    TeamMember[]
-  trainings  Training[]
-  matches    Match[]
-  highlights Highlight[]
-  inviteCodes InviteCode[]
-  payments    Payment[]
+  members        TeamMember[]
+  trainings      Training[]
+  matches        Match[]
+  highlights     Highlight[]
+  inviteCodes    InviteCode[]
+  payments       Payment[]
   playerRequests PlayerRequest[]
   lineupPlans    LineupPlan[]
-  announcements  Announcement[] @relation("AnnouncementTeams")
+  announcements  Announcement[]  @relation("AnnouncementTeams")
 }
 
 model TeamMember {
@@ -114,6 +116,7 @@ model TeamMember {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, userId])
+  @@index([userId])
 }
 
 model Training {
@@ -124,11 +127,11 @@ model Training {
   notes     String?
   createdAt DateTime @default(now())
 
-  team          Team                   @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  registrations TrainingRegistration[]
-  highlights      Highlight[]
-  playerRequests  PlayerRequest[]
-  lineupPlan      LineupPlan?
+  team           Team                   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  registrations  TrainingRegistration[]
+  highlights     Highlight[]
+  playerRequests PlayerRequest[]
+  lineupPlan     LineupPlan?
 
   @@index([teamId, startsAt])
 }
@@ -146,6 +149,7 @@ model TrainingRegistration {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([trainingId, userId])
+  @@index([userId])
 }
 
 model Match {
@@ -159,12 +163,12 @@ model Match {
   awayScore Int?
   createdAt DateTime @default(now())
 
-  team          Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  registrations MatchRegistration[]
-  stats         MatchStat[]
-  highlights      Highlight[]
-  playerRequests  PlayerRequest[]
-  lineupPlan      LineupPlan?
+  team           Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  registrations  MatchRegistration[]
+  stats          MatchStat[]
+  highlights     Highlight[]
+  playerRequests PlayerRequest[]
+  lineupPlan     LineupPlan?
 
   @@index([teamId, startsAt])
 }
@@ -181,6 +185,7 @@ model MatchRegistration {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([matchId, userId])
+  @@index([userId])
 }
 
 model MatchStat {
@@ -195,6 +200,7 @@ model MatchStat {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([matchId, userId])
+  @@index([userId])
 }
 
 model Highlight {
@@ -219,7 +225,9 @@ model Highlight {
   @@index([matchId])
 }
 
-/** A player tagged on a highlight clip, e.g. who scored or assisted a goal, or the goalkeeper on a save. */
+/**
+ * A player tagged on a highlight clip, e.g. who scored or assisted a goal, or the goalkeeper on a save.
+ */
 model HighlightPlayer {
   id          String              @id @default(cuid())
   highlightId String
@@ -234,14 +242,14 @@ model HighlightPlayer {
 }
 
 model PlayerRequest {
-  id          String                 @id @default(cuid())
+  id          String                @id @default(cuid())
   teamId      String
   trainingId  String?
   matchId     String?
   position    PlayerRequestPosition
   note        String?
   createdById String
-  createdAt   DateTime               @default(now())
+  createdAt   DateTime              @default(now())
   resolvedAt  DateTime?
 
   team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -268,8 +276,9 @@ model LineupPlan {
   training  Training? @relation(fields: [trainingId], references: [id], onDelete: Cascade)
   match     Match?    @relation(fields: [matchId], references: [id], onDelete: Cascade)
   updatedBy User      @relation("LineupUpdater", fields: [updatedById], references: [id], onDelete: Cascade)
-}
 
+  @@index([teamId])
+}
 
 model Announcement {
   id        String   @id @default(cuid())
@@ -313,9 +322,8 @@ model RegistrationAttempt {
   updatedAt       DateTime  @updatedAt
 }
 
-
 model Payment {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   teamId    String
   userId    String
   title     String
@@ -323,7 +331,7 @@ model Payment {
   dueDate   DateTime
   paidAt    DateTime?
   note      String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -345,4 +353,24 @@ model AdminAuditLog {
 
   @@index([createdAt])
   @@index([actorId, createdAt])
+}
+
+/// Admin-issued one-time codes for resetting a player's password. Present in the
+/// production database since 20260916121000_password_reset_codes; recorded here
+/// so the schema describes the database that actually exists.
+model PasswordResetCode {
+  id          String    @id @default(cuid())
+  codeHash    String    @unique
+  userId      String
+  createdById String
+  expiresAt   DateTime
+  usedAt      DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  user      User @relation("PasswordResetTarget", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User @relation("PasswordResetIssuer", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdById])
 }
