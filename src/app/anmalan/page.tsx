@@ -2,8 +2,9 @@ import { respondToMatch, respondToTraining } from "@/app/actions";
 import { AttendanceControls } from "@/components/AttendanceControls";
 import { LineupView } from "@/components/LineupView";
 import { PageHeader } from "@/components/PageHeader";
-import { Card, Eyebrow, StatusLabel } from "@/components/ui";
-import { DEFAULT_SEASON, getCurrentUser, getUserSeasonTeams } from "@/lib/current-user";
+import { RsvpQuickButton } from "@/components/RsvpQuickButton";
+import { Card, Eyebrow } from "@/components/ui";
+import { DEFAULT_SEASON, getSessionUser, getUserSeasonTeams } from "@/lib/current-user";
 import { formatDateHeader, formatTime } from "@/lib/format";
 import { LineupData } from "@/lib/lineup";
 import { getActivePlayerRequests, getCalendarEventsForTeams, getUpcomingByTeam } from "@/lib/queries";
@@ -11,7 +12,7 @@ import { getActivePlayerRequests, getCalendarEventsForTeams, getUpcomingByTeam }
 const POSITION_LABEL: Record<string, string> = { GOALKEEPER: "målvakt", SKATER: "utespelare" };
 
 export default async function AnmalanPage() {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
   const teams = await getUserSeasonTeams(user.id, isAdmin, DEFAULT_SEASON);
 
@@ -128,6 +129,7 @@ export default async function AnmalanPage() {
                   formAction={respond}
                   idField={idField}
                   idValue={item.id}
+                  currentUserId={user.id}
                   status={registration?.status ?? null}
                   absenceReason={registration?.absenceReason ?? null}
                   lineup={lineup}
@@ -159,15 +161,7 @@ export default async function AnmalanPage() {
                         <span className="block text-[12px] text-ink-subtle">{item.team.name}</span>
                       ) : null}
                     </span>
-                    {going ? (
-                      <StatusLabel tone="success">Anmäld</StatusLabel>
-                    ) : (
-                      <form action={respond}>
-                        <input type="hidden" name={idField} value={item.id} />
-                        <input type="hidden" name="status" value="GOING" />
-                        <button type="submit" className="min-h-11 min-w-11 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"><StatusLabel tone="signal">Anmäl mig</StatusLabel></button>
-                      </form>
-                    )}
+                    <RsvpQuickButton action={respond} idField={idField} idValue={item.id} going={going} />
                   </div>
                 );
               })}

@@ -3,8 +3,9 @@ import { respondToMatch, respondToTraining } from "@/app/actions";
 import { PageHeader } from "@/components/PageHeader";
 import { SeasonSwitcher } from "@/components/SeasonSwitcher";
 import { Card, Eyebrow, StatusLabel } from "@/components/ui";
-import { DEFAULT_SEASON, getCurrentUser, getUserSeasonTeams, getUserSeasons } from "@/lib/current-user";
+import { DEFAULT_SEASON, getSessionUser, getUserSeasonTeams, getUserSeasons } from "@/lib/current-user";
 import { endTime, formatDateHeader, formatMonthYear, formatTime } from "@/lib/format";
+import { RsvpQuickButton } from "@/components/RsvpQuickButton";
 import { getCalendarEventsForTeams } from "@/lib/queries";
 
 function dayKey(date: Date) {
@@ -26,7 +27,7 @@ export default async function KalenderPage({
 }: {
   searchParams: Promise<{ sasong?: string | string[] }>;
 }) {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
   const availableSeasons = await getUserSeasons(user.id, isAdmin);
 
@@ -135,18 +136,10 @@ export default async function KalenderPage({
                             {showTeamLabel ? ` · ${item.team.name}` : ""}
                           </div>
                         </div>
-                        {going ? (
-                          <StatusLabel tone="success">Anmäld</StatusLabel>
-                        ) : isHistoric ? (
+                        {!going && isHistoric ? (
                           <StatusLabel tone="muted">Ej anmäld</StatusLabel>
                         ) : (
-                          <form action={respond}>
-                            <input type="hidden" name={idField} value={item.id} />
-                            <input type="hidden" name="status" value="GOING" />
-                            <button type="submit" className="min-h-11 min-w-11 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
-                              <StatusLabel tone="signal">Anmäl mig</StatusLabel>
-                            </button>
-                          </form>
+                          <RsvpQuickButton action={respond} idField={idField} idValue={item.id} going={going} />
                         )}
                       </div>
                     </Card>

@@ -61,20 +61,26 @@ export async function getUpcomingByTeam(teams: TeamRef[]) {
   const now = new Date();
   return Promise.all(
     teams.map(async (team) => {
+      // Only what the Anmälan card renders. Selecting whole rows made Postgres
+      // return every column of every roster member and registration on each
+      // render of this page, most of which the card never looks at.
+      const registrations = {
+        select: { userId: true, status: true, absenceReason: true },
+      } as const;
       const [nextTraining, nextMatch, roster] = await Promise.all([
         prisma.training.findFirst({
           where: { teamId: team.id, startsAt: { gte: now } },
           orderBy: { startsAt: "asc" },
-          include: { registrations: true, lineupPlan: true },
+          include: { registrations, lineupPlan: true },
         }),
         prisma.match.findFirst({
           where: { teamId: team.id, startsAt: { gte: now } },
           orderBy: { startsAt: "asc" },
-          include: { registrations: true, lineupPlan: true },
+          include: { registrations, lineupPlan: true },
         }),
         prisma.teamMember.findMany({
           where: { teamId: team.id },
-          include: { user: true },
+          select: { userId: true, jerseyNo: true, position: true, user: { select: { name: true } } },
           orderBy: { jerseyNo: "asc" },
         }),
       ]);
@@ -98,13 +104,19 @@ export async function getCalendarEventsForTeams(
       where: { teamId: { in: teamIds }, startsAt: dateFilter },
       orderBy: { startsAt: historic ? "desc" : "asc" },
       take: historic ? days : undefined,
-      include: { registrations: { where: { userId } }, team: { select: { id: true, name: true } } },
+      include: {
+        registrations: { where: { userId }, select: { status: true } },
+        team: { select: { id: true, name: true } },
+      },
     }),
     prisma.match.findMany({
       where: { teamId: { in: teamIds }, startsAt: dateFilter },
       orderBy: { startsAt: historic ? "desc" : "asc" },
       take: historic ? days : undefined,
-      include: { registrations: { where: { userId } }, team: { select: { id: true, name: true } } },
+      include: {
+        registrations: { where: { userId }, select: { status: true } },
+        team: { select: { id: true, name: true } },
+      },
     }),
   ]);
   return [

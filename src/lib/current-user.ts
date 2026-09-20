@@ -19,6 +19,29 @@ export async function getCurrentUser() {
   return user;
 }
 
+/**
+ * Identity only, in a single query. For pages and actions that pick their teams
+ * from the database rather than from the cookie-selected context, this skips
+ * the `teams` include and the available-teams lookup `getCurrentUserWithTeam`
+ * needs — three statements the Anmälan and Kalender renders were paying for
+ * fields they never read.
+ */
+export async function getSessionUser() {
+  const session = await auth();
+  if (!session?.user?.email) redirect("/login");
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true, name: true, role: true, isSuperAdmin: true, isActive: true, accessApproved: true },
+  });
+
+  if (!user || !user.isActive || !user.accessApproved) {
+    throw new Error("Den inloggade användaren finns inte i Femtekedjan.");
+  }
+
+  return user;
+}
+
 export async function getCurrentUserWithTeam() {
   const session = await auth();
   if (!session?.user?.email) redirect("/login");

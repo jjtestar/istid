@@ -129,6 +129,8 @@ model Training {
   highlights      Highlight[]
   playerRequests  PlayerRequest[]
   lineupPlan      LineupPlan?
+
+  @@index([teamId, startsAt])
 }
 
 model TrainingRegistration {
@@ -163,6 +165,8 @@ model Match {
   highlights      Highlight[]
   playerRequests  PlayerRequest[]
   lineupPlan      LineupPlan?
+
+  @@index([teamId, startsAt])
 }
 
 model MatchRegistration {

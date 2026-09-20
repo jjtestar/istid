@@ -1,9 +1,12 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/lib/auth";
 import { DEFAULT_SEASON, getCurrentUser, getCurrentUserWithTeam, teamSlug } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import type { RsvpResult } from "@/lib/rsvp";
 
 const RSVP_STATUSES = new Set(["GOING", "NOT_GOING"]);
 const ABSENCE_REASONS = new Set(["TIRED", "SICK", "VACATION", "OTHER"]);
@@ -49,50 +52,84 @@ export async function changeAppContext(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
-export async function respondToTraining(formData: FormData) {
-  const trainingId = String(formData.get("trainingId") ?? "");
-  const response = getResponse(formData);
-  if (!trainingId || !response) return;
-  const user = await getCurrentUser();
-  const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
-  const training = await prisma.training.findFirst({
-    where: { id: trainingId, ...(isAdmin ? {} : { team: { members: { some: { userId: user.id } } } }) },
-    select: { team: { select: { season: true } } },
+/**
+ * Resolves the team that owns an activity, in a single query that also enforces
+ * the season window and (through `scope`) who is allowed to answer for it.
+ */
+function findEligibleTeam(kind: "training" | "match", id: string, scope: Prisma.TeamWhereInput) {
+  return prisma.team.findFirst({
+    where: {
+      season: DEFAULT_SEASON,
+      ...(kind === "training" ? { trainings: { some: { id } } } : { matches: { some: { id } } }),
+      ...scope,
+    },
+    select: { id: true },
   });
-  if (!training || training.team.season !== DEFAULT_SEASON) return;
+}
 
-  await prisma.trainingRegistration.upsert({
-    where: { trainingId_userId: { trainingId, userId: user.id } },
-    update: response,
-    create: { trainingId, userId: user.id, ...response },
-  });
+/**
+ * Records one RSVP. Deliberately lean: identity and eligibility resolve in two
+ * parallel queries rather than by building the cookie-selected team context, so
+ * the roundtrip the player is waiting on stays as short as the write allows.
+ */
+async function saveRsvp(
+  kind: "training" | "match",
+  id: string,
+  formData: FormData,
+): Promise<RsvpResult> {
+  const response = getResponse(formData);
+  if (!id || !response) return { ok: false, error: "Ogiltigt svar. Ladda om sidan och försök igen." };
+
+  const session = await auth();
+  const email = session?.user?.email;
+  if (!email) return { ok: false, error: "Du är utloggad. Logga in igen." };
+
+  const [user, memberTeam] = await Promise.all([
+    prisma.user.findUnique({
+      where: { email },
+      select: { id: true, role: true, isSuperAdmin: true, isActive: true, accessApproved: true },
+    }),
+    findEligibleTeam(kind, id, { members: { some: { user: { email } } } }),
+  ]);
+
+  if (!user?.isActive || !user.accessApproved) {
+    return { ok: false, error: "Ditt konto saknar behörighet. Kontakta en administratör." };
+  }
+
+  // Admins answer for activities in teams they are not members of, which the
+  // membership-scoped lookup above deliberately misses.
+  const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
+  const team = memberTeam ?? (isAdmin ? await findEligibleTeam(kind, id, {}) : null);
+  if (!team) {
+    return { ok: false, error: "Aktiviteten går inte att anmäla sig till. Ladda om sidan." };
+  }
+
+  if (kind === "training") {
+    await prisma.trainingRegistration.upsert({
+      where: { trainingId_userId: { trainingId: id, userId: user.id } },
+      update: response,
+      create: { trainingId: id, userId: user.id, ...response },
+    });
+  } else {
+    await prisma.matchRegistration.upsert({
+      where: { matchId_userId: { matchId: id, userId: user.id } },
+      update: response,
+      create: { matchId: id, userId: user.id, ...response },
+    });
+  }
 
   revalidatePath("/");
   revalidatePath("/anmalan");
   revalidatePath("/kalender");
+  return { ok: true };
+}
+
+export async function respondToTraining(formData: FormData) {
+  return saveRsvp("training", String(formData.get("trainingId") ?? ""), formData);
 }
 
 export async function respondToMatch(formData: FormData) {
-  const matchId = String(formData.get("matchId") ?? "");
-  const response = getResponse(formData);
-  if (!matchId || !response) return;
-  const user = await getCurrentUser();
-  const isAdmin = user.role === "ADMIN" || user.isSuperAdmin;
-  const match = await prisma.match.findFirst({
-    where: { id: matchId, ...(isAdmin ? {} : { team: { members: { some: { userId: user.id } } } }) },
-    select: { team: { select: { season: true } } },
-  });
-  if (!match || match.team.season !== DEFAULT_SEASON) return;
-
-  await prisma.matchRegistration.upsert({
-    where: { matchId_userId: { matchId, userId: user.id } },
-    update: response,
-    create: { matchId, userId: user.id, ...response },
-  });
-
-  revalidatePath("/");
-  revalidatePath("/anmalan");
-  revalidatePath("/kalender");
+  return saveRsvp("match", String(formData.get("matchId") ?? ""), formData);
 }
 
 export async function updatePlayerDetails(formData: FormData) {
