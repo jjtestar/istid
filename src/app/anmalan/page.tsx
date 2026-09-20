@@ -1,13 +1,13 @@
 import { respondToMatch, respondToTraining } from "@/app/actions";
 import { AttendanceControls } from "@/components/AttendanceControls";
+import { ExpandableList } from "@/components/ExpandableList";
 import { LineupView } from "@/components/LineupView";
 import { PageHeader } from "@/components/PageHeader";
-import { RsvpQuickButton } from "@/components/RsvpQuickButton";
 import { Card, Eyebrow } from "@/components/ui";
 import { DEFAULT_SEASON, getSessionUser, getUserSeasonTeams } from "@/lib/current-user";
-import { formatDateHeader, formatTime, matchTitle } from "@/lib/format";
+import { formatDateHeader, formatDayMonth, formatTime, matchTitle } from "@/lib/format";
 import { LineupData } from "@/lib/lineup";
-import { getActivePlayerRequests, getCalendarEventsForTeams, getUpcomingByTeam } from "@/lib/queries";
+import { getActivePlayerRequests, getUpcomingActivitiesForTeams } from "@/lib/queries";
 
 const POSITION_LABEL: Record<string, string> = { GOALKEEPER: "målvakt", SKATER: "utespelare" };
 
@@ -21,21 +21,11 @@ export default async function AnmalanPage() {
   }
 
   const teamIds = teams.map((team) => team.id);
-  const [byTeam, weekEvents, playerRequests] = await Promise.all([
-    getUpcomingByTeam(teams),
-    getCalendarEventsForTeams(user.id, teamIds, 7),
+  const [activities, playerRequests] = await Promise.all([
+    getUpcomingActivitiesForTeams(teams),
     getActivePlayerRequests(teamIds),
   ]);
-
-  const featuredEvents = byTeam
-    .flatMap(({ team, nextTraining, nextMatch, roster }) => [
-      nextTraining && { kind: "training" as const, item: nextTraining, team, roster },
-      nextMatch && { kind: "match" as const, item: nextMatch, team, roster },
-    ])
-    .filter((event): event is NonNullable<typeof event> => Boolean(event))
-    .sort((a, b) => a.item.startsAt.getTime() - b.item.startsAt.getTime());
-  const featuredKeys = new Set(featuredEvents.map((event) => `${event.kind}:${event.item.id}`));
-  const week = weekEvents.filter((event) => !featuredKeys.has(`${event.kind}:${event.item.id}`)).slice(0, 3);
+  const showTeamLabel = teams.length > 1;
 
   return (
     <div>
@@ -62,15 +52,21 @@ export default async function AnmalanPage() {
           </Card>
         ) : null}
 
-        {featuredEvents.length === 0 ? (
+        {activities.length === 0 ? (
           <Card className="p-5 text-center text-sm text-ink-subtle">
             Inga kommande träningar eller matcher att anmäla sig till.
           </Card>
         ) : (
-          /* Two per row once there is room for it, so a team with several
-             upcoming activities doesn't become one long scroll on desktop. */
-          <div className={`grid gap-6 ${featuredEvents.length > 1 ? "xl:grid-cols-2" : ""}`}>
-            {featuredEvents.map(({ kind, item, team, roster }) => {
+          /* Ett kort per tillfälle, alla likadana: en enstaka träning och en
+             träning ur en återkommande serie ska se ut och fungera exakt
+             likadant. Två per rad när skärmen räcker till. */
+          <ExpandableList
+            initialCount={4}
+            moreLabel="Visa fler tillfällen"
+            lessLabel="Visa färre tillfällen"
+            listClassName={`grid gap-4 ${activities.length > 1 ? "xl:grid-cols-2" : ""}`}
+          >
+            {activities.map(({ kind, item, roster }, index) => {
               const isTraining = kind === "training";
               const registrationByUser = new Map(
                 item.registrations.map((candidate) => [candidate.userId, candidate]),
@@ -94,7 +90,10 @@ export default async function AnmalanPage() {
               const lineupPlanData = item.lineupPlan?.data as LineupData | undefined;
 
               return (
-                <Card key={`${kind}:${item.id}`} className="overflow-hidden p-4">
+                <Card
+                  key={`${kind}:${item.id}`}
+                  className={`overflow-hidden p-4 ${index === 0 ? "border-2 border-ink" : ""}`}
+                >
                   <div className="flex items-start gap-3">
                     <div className="flex w-12 shrink-0 flex-col items-center justify-center rounded-xl border border-divider bg-white/80 py-1.5 text-center">
                       <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
@@ -103,17 +102,24 @@ export default async function AnmalanPage() {
                       <span className="text-lg font-bold leading-none text-ink">{item.startsAt.getDate()}</span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
-                        <Eyebrow tone="heading">{isTraining ? "Nästa träning" : "Nästa match"}</Eyebrow>
-                        {teams.length > 1 ? (
+                      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-base font-bold text-ink">{title}</h2>
+                          {index === 0 ? (
+                            <span className="rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
+                              Näst på tur
+                            </span>
+                          ) : null}
+                        </span>
+                        {showTeamLabel ? (
                           <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
-                            {team.name}
+                            {item.team.name}
                           </span>
                         ) : null}
                       </div>
-                      <h2 className="mt-0.5 text-base font-bold text-ink">{title}</h2>
                       <p className="mt-0.5 text-sm text-ink-subtle">
-                        {formatDateHeader(item.startsAt)} · {formatTime(item.startsAt)} · {item.location}
+                        {formatDayMonth(item.startsAt)} · {formatTime(item.startsAt)}
+                        {!isTraining && item.endsAt ? `–${formatTime(item.endsAt)}` : ""} · {item.location}
                       </p>
                     </div>
                   </div>
@@ -140,38 +146,8 @@ export default async function AnmalanPage() {
                 </Card>
               );
             })}
-          </div>
+          </ExpandableList>
         )}
-
-        {week.length > 0 ? (
-          <Card className="p-4">
-            <Eyebrow>Veckan</Eyebrow>
-            <div className="mt-2">
-              {week.map(({ kind, item }) => {
-                const going = item.registrations[0]?.status === "GOING";
-                const title = kind === "training" ? "Träning" : matchTitle(item);
-                const respond = kind === "training" ? respondToTraining : respondToMatch;
-                const idField = kind === "training" ? "trainingId" : "matchId";
-                return (
-                  <div key={`${kind}:${item.id}`} className="flex items-center gap-3.5 border-t border-divider py-3">
-                    <span className="w-[46px] shrink-0 text-[13px] font-bold text-ink">
-                      {formatDateHeader(item.startsAt).slice(0, 3).toUpperCase()} {item.startsAt.getDate()}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[15px] font-semibold text-ink">
-                        {title} {formatTime(item.startsAt)}
-                      </span>
-                      {teams.length > 1 ? (
-                        <span className="block text-[12px] text-ink-subtle">{item.team.name}</span>
-                      ) : null}
-                    </span>
-                    <RsvpQuickButton action={respond} idField={idField} idValue={item.id} going={going} />
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        ) : null}
       </main>
     </div>
   );

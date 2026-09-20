@@ -54,40 +54,57 @@ export async function getCalendarEvents(userId: string, teamId: string, days = 2
 type TeamRef = { id: string; name: string };
 
 /**
- * Next training/match per team, each tagged with which team it belongs to —
- * used to build an aggregated "featured activities" list across every team
- * a player is assigned to, instead of a single selected team.
+ * Kommande träningar, matcher och cuper för en spelares alla lag, i en och
+ * samma tidsordnade lista — Anmälan visar varje tillfälle med samma kort och
+ * samma anmälningsknappar, oavsett om det är ett engångstillfälle eller ett av
+ * många i en återkommande serie.
+ *
+ * Allt inom `days` dagar tas med, men alltid minst `minimum` tillfällen, så att
+ * sidan inte blir tom under ett uppehåll i schemat.
  */
-export async function getUpcomingByTeam(teams: TeamRef[]) {
+export async function getUpcomingActivitiesForTeams(teams: TeamRef[], days = 7, minimum = 2, take = 12) {
   const now = new Date();
-  return Promise.all(
-    teams.map(async (team) => {
-      // Only what the Anmälan card renders. Selecting whole rows made Postgres
-      // return every column of every roster member and registration on each
-      // render of this page, most of which the card never looks at.
-      const registrations = {
-        select: { userId: true, status: true, absenceReason: true },
-      } as const;
-      const [nextTraining, nextMatch, roster] = await Promise.all([
-        prisma.training.findFirst({
-          where: { teamId: team.id, startsAt: { gte: now } },
-          orderBy: { startsAt: "asc" },
-          include: { registrations, lineupPlan: true },
-        }),
-        prisma.match.findFirst({
-          where: { teamId: team.id, startsAt: { gte: now } },
-          orderBy: { startsAt: "asc" },
-          include: { registrations, lineupPlan: true },
-        }),
-        prisma.teamMember.findMany({
-          where: { teamId: team.id },
-          select: { userId: true, jerseyNo: true, position: true, user: { select: { name: true } } },
-          orderBy: { jerseyNo: "asc" },
-        }),
-      ]);
-      return { team, nextTraining, nextMatch, roster };
+  const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+  const teamIds = teams.map((team) => team.id);
+  // Bara det korten faktiskt renderar: hela rader skulle dra med varje kolumn
+  // för varje lagmedlem och anmälan vid varje rendering av sidan.
+  const registrations = { select: { userId: true, status: true, absenceReason: true } } as const;
+  const team = { select: { id: true, name: true } } as const;
+  const [trainings, matches, members] = await Promise.all([
+    prisma.training.findMany({
+      where: { teamId: { in: teamIds }, startsAt: { gte: now } },
+      orderBy: { startsAt: "asc" },
+      take,
+      include: { registrations, lineupPlan: true, team },
     }),
-  );
+    prisma.match.findMany({
+      where: { teamId: { in: teamIds }, startsAt: { gte: now } },
+      orderBy: { startsAt: "asc" },
+      take,
+      include: { registrations, lineupPlan: true, team },
+    }),
+    prisma.teamMember.findMany({
+      where: { teamId: { in: teamIds } },
+      select: { teamId: true, userId: true, jerseyNo: true, position: true, user: { select: { name: true } } },
+      orderBy: { jerseyNo: "asc" },
+    }),
+  ]);
+
+  const rosterByTeam = new Map<string, typeof members>();
+  for (const member of members) {
+    const roster = rosterByTeam.get(member.teamId);
+    if (roster) roster.push(member);
+    else rosterByTeam.set(member.teamId, [member]);
+  }
+
+  const events = [
+    ...trainings.map((item) => ({ kind: "training" as const, item })),
+    ...matches.map((item) => ({ kind: "match" as const, item })),
+  ].sort((a, b) => a.item.startsAt.getTime() - b.item.startsAt.getTime());
+
+  const withinWindow = events.filter((event) => event.item.startsAt <= until);
+  const visible = (withinWindow.length >= minimum ? withinWindow : events.slice(0, minimum)).slice(0, take);
+  return visible.map((event) => ({ ...event, roster: rosterByTeam.get(event.item.teamId) ?? [] }));
 }
 
 /** Same as getCalendarEvents but aggregated across several teams at once, each event tagged with its team. */
