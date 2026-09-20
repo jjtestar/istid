@@ -35,9 +35,10 @@ export async function getSessionUser() {
     select: { id: true, name: true, role: true, isSuperAdmin: true, isActive: true, accessApproved: true },
   });
 
-  if (!user || !user.isActive || !user.accessApproved) {
-    throw new Error("Den inloggade användaren finns inte i Femtekedjan.");
-  }
+  // Reachable with a still-valid session cookie once access is revoked, so it
+  // has to be a redirect rather than an error page. /login recognises the stale
+  // session and offers to sign out.
+  if (!user || !user.isActive || !user.accessApproved) redirect("/login");
 
   return user;
 }
@@ -53,9 +54,7 @@ export async function getCurrentUserWithTeam() {
     include: { teams: true },
   });
 
-  if (!user || !user.isActive || !user.accessApproved) {
-    throw new Error("Den inloggade användaren finns inte i Femtekedjan.");
-  }
+  if (!user || !user.isActive || !user.accessApproved) redirect("/login");
 
   const availableTeams =
     user.role === "ADMIN" || user.isSuperAdmin

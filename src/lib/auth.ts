@@ -35,14 +35,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    authorized: async ({ auth: session }) => {
-      if (!session?.user?.email) return false;
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: { isActive: true, accessApproved: true },
-      });
-      return user?.isActive === true && user.accessApproved === true;
-    },
+    /**
+     * Runs in the proxy on every matched request — page loads, RSC fetches and
+     * every Server Action POST alike — so it stays a pure token check. Looking
+     * the account up here cost a database roundtrip before the request even
+     * reached the route, and every entry point behind it re-reads the user
+     * anyway: getSessionUser, getCurrentUserWithTeam and requireAdmin all
+     * reject a deactivated or unapproved account, as do setTheme, the RSVP
+     * actions and /api/my-data. Revocation therefore still takes effect on the
+     * very next request; it is simply enforced where the user is already read.
+     */
+    authorized: async ({ auth: session }) => Boolean(session?.user?.email),
     jwt: async ({ token, user }) => {
       if (user) token.role = (user as { role?: string }).role;
       return token;

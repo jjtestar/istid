@@ -12,10 +12,13 @@ export async function setTheme(formData: FormData) {
 
   const theme = normalizeTheme(formData.get("theme")?.toString());
 
-  await prisma.user.update({
-    where: { email: session.user.email },
+  // Scoped to an active, approved account so the write itself is the access
+  // check — no extra query now that the proxy no longer makes one.
+  const updated = await prisma.user.updateMany({
+    where: { email: session.user.email, isActive: true, accessApproved: true },
     data: { theme },
   });
+  if (updated.count === 0) redirect("/login");
 
   revalidatePath("/", "layout");
   redirect("/mer/teman");

@@ -15,6 +15,8 @@ export async function GET() {
       name: true,
       email: true,
       role: true,
+      isActive: true,
+      accessApproved: true,
       heightCm: true,
       weightKg: true,
       stickSide: true,
@@ -103,6 +105,13 @@ export async function GET() {
 
   if (!user) {
     return Response.json({ error: "Användaren kunde inte hittas." }, { status: 404 });
+  }
+
+  // This route reads the account itself rather than going through
+  // getSessionUser, so it carries its own access check: the proxy no longer
+  // makes one, and a revoked account must not be able to export its data.
+  if (!user.isActive || !user.accessApproved) {
+    return Response.json({ error: "Ditt konto saknar behörighet." }, { status: 403 });
   }
 
   const exportData = {
