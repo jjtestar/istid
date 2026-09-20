@@ -69,6 +69,19 @@ function eventDate(season: string, index: number) {
   return new Date(endYear, 0, 18 + index * 7, 18, 30);
 }
 
+/** Lagets grundschema: träning tisdag och torsdag, match på söndag. */
+const TRAINING_WEEKDAYS = [2, 4];
+const TRAINING_HOUR = 19;
+const MATCH_WEEKDAY = 0;
+const MATCH_HOUR = 18;
+const UPCOMING_WEEKS = 8;
+
+function weeksLater(date: Date, weeks: number) {
+  const later = new Date(date.getTime());
+  later.setDate(later.getDate() + weeks * 7);
+  return later;
+}
+
 function nextWeekday(weekday: number, hour: number) {
   const date = new Date();
   date.setHours(hour, 0, 0, 0);
@@ -232,33 +245,56 @@ async function main() {
       }
 
       if (season === CURRENT_SEASON) {
-        const futureTrainingId = `training-${teamDefinition.slug}-${seasonKey}-next`;
-        const futureMatchId = `match-${teamDefinition.slug}-${seasonKey}-next`;
-        await prisma.training.upsert({
-          where: { id: futureTrainingId },
-          update: { teamId, startsAt: nextWeekday(2, 20), location: teamDefinition.rink },
-          create: { id: futureTrainingId, teamId, startsAt: nextWeekday(2, 20), location: teamDefinition.rink },
-        });
-        await prisma.match.upsert({
-          where: { id: futureMatchId },
-          update: {
+        // Lagets grundschema framåt: träning tisdag och torsdag, match på
+        // söndag — samma upplägg som adminformulären för återkommande
+        // aktiviteter är förifyllda med.
+        for (const [dayIndex, weekday] of TRAINING_WEEKDAYS.entries()) {
+          const first = nextWeekday(weekday, TRAINING_HOUR);
+          for (let week = 0; week < UPCOMING_WEEKS; week += 1) {
+            const id = `training-${teamDefinition.slug}-${seasonKey}-upcoming-${dayIndex}-${week}`;
+            const startsAt = weeksLater(first, week);
+            const seriesId = `series-training-${teamDefinition.slug}-${seasonKey}-${dayIndex}`;
+            await prisma.training.upsert({
+              where: { id },
+              update: { teamId, startsAt, location: teamDefinition.rink, seriesId },
+              create: { id, teamId, startsAt, location: teamDefinition.rink, seriesId },
+            });
+          }
+        }
+
+        const firstSunday = nextWeekday(MATCH_WEEKDAY, MATCH_HOUR);
+        for (let week = 0; week < UPCOMING_WEEKS; week += 1) {
+          const id = `match-${teamDefinition.slug}-${seasonKey}-upcoming-${week}`;
+          const opponent = opponents[(teamIndex + week + 1) % opponents.length];
+          const isHome = week % 2 === 0;
+          const startsAt = weeksLater(firstSunday, week);
+          const data = {
             teamId,
-            opponent: opponents[(teamIndex + 1) % opponents.length],
-            isHome: true,
-            startsAt: nextWeekday(0, 18),
-            location: teamDefinition.rink,
+            opponent,
+            isHome,
+            startsAt,
+            location: isHome ? teamDefinition.rink : `${opponent} ishall`,
+            seriesId: `series-match-${teamDefinition.slug}-${seasonKey}`,
             homeScore: null,
             awayScore: null,
-          },
-          create: {
-            id: futureMatchId,
-            teamId,
-            opponent: opponents[(teamIndex + 1) % opponents.length],
-            isHome: true,
-            startsAt: nextWeekday(0, 18),
-            location: teamDefinition.rink,
-          },
-        });
+          };
+          await prisma.match.upsert({ where: { id }, update: data, create: { id, ...data } });
+        }
+
+        // En cup: samma tabell som matcherna, men kind = CUP och med cupens
+        // namn i opponent-fältet i stället för ett motståndarlag.
+        const cupId = `cup-${teamDefinition.slug}-${seasonKey}`;
+        const cupStartsAt = weeksLater(nextWeekday(6, 8), 3);
+        const cupData = {
+          teamId,
+          opponent: `${teamDefinition.name.split(" ")[0]} Cup`,
+          kind: "CUP" as const,
+          isHome: true,
+          startsAt: cupStartsAt,
+          endsAt: new Date(cupStartsAt.getTime() + 10 * 60 * 60 * 1000),
+          location: teamDefinition.rink,
+        };
+        await prisma.match.upsert({ where: { id: cupId }, update: cupData, create: { id: cupId, ...cupData } });
       }
     }
   }

@@ -59,8 +59,10 @@ export async function GET() {
           match: {
             select: {
               opponent: true,
+              kind: true,
               isHome: true,
               startsAt: true,
+              endsAt: true,
               location: true,
               team: { select: { name: true, season: true } },
             },
@@ -75,6 +77,7 @@ export async function GET() {
           match: {
             select: {
               opponent: true,
+              kind: true,
               startsAt: true,
               team: { select: { name: true, season: true } },
             },

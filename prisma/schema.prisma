@@ -32,6 +32,13 @@ enum TrainingDay {
   SATURDAY
 }
 
+/// Vad en post i Match faktiskt är: en vanlig match mot ett lag, eller ett
+/// arrangemang som en cup där "opponent" i stället bär cupens namn.
+enum MatchKind {
+  MATCH
+  CUP
+}
+
 enum PlayerRequestPosition {
   GOALKEEPER
   SKATER
@@ -134,6 +141,9 @@ model Training {
   startsAt  DateTime
   location  String
   notes     String?
+  /// Sätts på alla träningar som skapades i samma återkommande serie, så att
+  /// hela serien kan visas och tas bort tillsammans. Null = enstaka tillfälle.
+  seriesId  String?
   createdAt DateTime @default(now())
 
   team           Team                   @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -143,6 +153,7 @@ model Training {
   lineupPlan     LineupPlan?
 
   @@index([teamId, startsAt])
+  @@index([seriesId])
 }
 
 model TrainingRegistration {
@@ -162,15 +173,21 @@ model TrainingRegistration {
 }
 
 model Match {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   teamId    String
+  /// Motståndarlaget, eller cupens namn när kind = CUP.
   opponent  String
-  isHome    Boolean  @default(true)
+  kind      MatchKind @default(MATCH)
+  isHome    Boolean   @default(true)
   startsAt  DateTime
+  /// Valfri sluttid, främst för cuper som pågår en hel dag eller helg.
+  endsAt    DateTime?
   location  String
   homeScore Int?
   awayScore Int?
-  createdAt DateTime @default(now())
+  /// Samma roll som Training.seriesId: markerar matcher skapade i en serie.
+  seriesId  String?
+  createdAt DateTime  @default(now())
 
   team           Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
   registrations  MatchRegistration[]
@@ -180,6 +197,7 @@ model Match {
   lineupPlan     LineupPlan?
 
   @@index([teamId, startsAt])
+  @@index([seriesId])
 }
 
 model MatchRegistration {

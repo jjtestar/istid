@@ -1,30 +1,113 @@
 import Link from "next/link";
-import { createMatch, createPlayerRequest, createTraining, deleteMatch, deleteTraining, resolvePlayerRequest, updateMatch, updateTraining } from "@/app/admin/actions";
+import {
+  createMatch,
+  createMatchSeries,
+  createPlayerRequest,
+  createTraining,
+  createTrainingSeries,
+  deleteMatch,
+  deleteMatchSeries,
+  deleteTraining,
+  deleteTrainingSeries,
+  resolvePlayerRequest,
+  updateMatch,
+  updateTraining,
+} from "@/app/admin/actions";
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
 import { ExpandableList } from "@/components/ExpandableList";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { DEFAULT_SEASON } from "@/lib/current-user";
+import { matchShortTitle } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import {
+  DEFAULT_MATCH_TIME,
+  DEFAULT_MATCH_WEEKDAYS,
+  DEFAULT_TRAINING_TIME,
+  DEFAULT_TRAINING_WEEKDAYS,
+  WEEKDAY_OPTIONS,
+  stockholmDateInput,
+  stockholmDateTimeInput,
+} from "@/lib/schedule";
 
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
+const label = "text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle";
 const fmt = new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" });
-const localInput = (d: Date) => {
-  const stockholm = new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(d);
-  const get = (type: string) => stockholm.find((p) => p.type === type)?.value ?? "00";
-  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
-};
 
 const POSITION_LABEL: Record<string, string> = { GOALKEEPER: "Målvakt", SKATER: "Utespelare" };
+
+type TeamOption = { id: string; name: string; season: string };
+
+function TeamSelect({ teams }: { teams: TeamOption[] }) {
+  return (
+    <label className="block">
+      <span className={label}>Lag</span>
+      <select name="teamId" required className={`${field} mt-1`}>
+        {teams.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.season}</option>)}
+      </select>
+    </label>
+  );
+}
+
+/**
+ * Veckodagarna en serie ska upprepas på. Förvalet är lagets grundschema:
+ * tisdag och torsdag för träning, söndag för match.
+ */
+function WeekdayPicker({ selected }: { selected: number[] }) {
+  return (
+    <fieldset>
+      <legend className={label}>Veckodagar</legend>
+      <div className="mt-1 flex flex-wrap gap-2">
+        {WEEKDAY_OPTIONS.map((day) => (
+          <label
+            key={day.value}
+            className="flex items-center gap-2 rounded-xl border border-divider px-3 py-2 text-sm has-[:checked]:border-ink has-[:checked]:bg-rink-crease"
+          >
+            <input
+              type="checkbox"
+              name="weekdays"
+              value={day.value}
+              defaultChecked={selected.includes(day.value)}
+              className="h-4 w-4"
+            />
+            {day.short}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function SeriesPeriodFields({ defaultTime, from, to }: { defaultTime: string; from: string; to: string }) {
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="block">
+          <span className={label}>Första datum</span>
+          <input name="from" type="date" required defaultValue={from} className={`${field} mt-1`} />
+        </label>
+        <label className="block">
+          <span className={label}>Sista datum</span>
+          <input name="to" type="date" required defaultValue={to} className={`${field} mt-1`} />
+        </label>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="block">
+          <span className={label}>Starttid</span>
+          <input name="time" type="time" required defaultValue={defaultTime} className={`${field} mt-1`} />
+        </label>
+        <label className="block">
+          <span className={label}>Upprepas</span>
+          <select name="intervalWeeks" className={`${field} mt-1`}>
+            <option value="1">Varje vecka</option>
+            <option value="2">Varannan vecka</option>
+          </select>
+        </label>
+      </div>
+    </>
+  );
+}
 
 function PlayerRequestSection({
   activity,
@@ -63,6 +146,32 @@ function PlayerRequestSection({
   );
 }
 
+/** "Ta bort hela serien" — bara meningsfullt för tillfällen som ingår i en. */
+function SeriesActions({
+  seriesId,
+  action,
+  label: buttonLabel,
+}: {
+  seriesId: string;
+  action: typeof deleteTrainingSeries;
+  label: string;
+}) {
+  return (
+    <div className="rounded-xl border border-divider bg-white/60 p-3">
+      <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle">Återkommande serie</p>
+      <p className="mt-1 text-sm text-ink-subtle">Tar bort alla kommande tillfällen i serien. Det som redan varit lämnas kvar.</p>
+      <AdminForm
+        action={action}
+        submitLabel={buttonLabel}
+        className="mt-2"
+        submitClassName="h-10 w-full rounded-xl border border-signal text-sm font-bold text-signal"
+      >
+        <input type="hidden" name="seriesId" value={seriesId} />
+      </AdminForm>
+    </div>
+  );
+}
+
 export default async function AdminActivitiesPage() {
   await requireAdmin();
   const [teams, trainings, matches] = await Promise.all([
@@ -72,40 +181,109 @@ export default async function AdminActivitiesPage() {
     prisma.match.findMany({ orderBy: { startsAt: "desc" }, take: 30, include: { team: true, playerRequests: { where: { resolvedAt: null } } } }),
   ]);
 
+  const today = new Date();
+  const seriesStart = stockholmDateInput(today);
+  const seriesEnd = stockholmDateInput(new Date(today.getFullYear(), today.getMonth() + 4, today.getDate()));
+
   return (
     <div>
       <AdminHeader title="Aktiviteter" />
       <main className="space-y-6 px-5 pb-10">
+        <Card className="p-5">
+          <Eyebrow>Grundschema</Eyebrow>
+          <h2 className="mt-1 section-title">Träning tisdag och torsdag, match på söndag</h2>
+          <p className="mt-2 text-sm text-ink-subtle">
+            Formulären för återkommande tillfällen är förifyllda med det schemat. Ändra veckodagar, tid och period
+            om laget kör något annat – varje tillfälle kan sedan redigeras för sig i listorna längre ned.
+          </p>
+        </Card>
+
         <div className="grid gap-5 xl:grid-cols-2">
           <Card className="p-5">
             <Eyebrow>Träning</Eyebrow>
-            <h2 className="mt-1 section-title">Skapa träning</h2>
+            <h2 className="mt-1 section-title">Enstaka träning</h2>
             <AdminForm action={createTraining} submitLabel="Skapa träning" className="mt-4 space-y-3">
-              <select name="teamId" required className={field}>
-                {teams.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.season}</option>)}
-              </select>
-              <input name="startsAt" type="datetime-local" required className={field} />
+              <TeamSelect teams={teams} />
+              <label className="block">
+                <span className={label}>Datum och tid</span>
+                <input name="startsAt" type="datetime-local" required className={`${field} mt-1`} />
+              </label>
               <input name="location" required placeholder="Plats" className={field} />
               <input name="notes" placeholder="Anteckning (valfritt)" className={field} />
             </AdminForm>
           </Card>
           <Card className="p-5">
-            <Eyebrow>Match</Eyebrow>
-            <h2 className="mt-1 section-title">Skapa match</h2>
-            <AdminForm action={createMatch} submitLabel="Skapa match" className="mt-4 space-y-3">
-              <select name="teamId" required className={field}>
-                {teams.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.season}</option>)}
-              </select>
-              <input name="startsAt" type="datetime-local" required className={field} />
-              <input name="opponent" required placeholder="Motståndare" className={field} />
+            <Eyebrow>Träning</Eyebrow>
+            <h2 className="mt-1 section-title">Återkommande träningar</h2>
+            <AdminForm action={createTrainingSeries} submitLabel="Skapa serie" className="mt-4 space-y-3">
+              <TeamSelect teams={teams} />
+              <WeekdayPicker selected={DEFAULT_TRAINING_WEEKDAYS} />
+              <SeriesPeriodFields defaultTime={DEFAULT_TRAINING_TIME} from={seriesStart} to={seriesEnd} />
               <input name="location" required placeholder="Plats" className={field} />
-              <select name="isHome" className={field}>
-                <option value="true">Hemmamatch</option>
-                <option value="false">Bortamatch</option>
-              </select>
+              <input name="notes" placeholder="Anteckning (valfritt)" className={field} />
+              <p className="text-xs text-ink-subtle">
+                Tillfällen som redan ligger inne på samma tid hoppas över, så serien kan skapas om utan dubbletter.
+              </p>
             </AdminForm>
           </Card>
         </div>
+
+        <div className="grid gap-5 xl:grid-cols-2">
+          <Card className="p-5">
+            <Eyebrow>Match &amp; cup</Eyebrow>
+            <h2 className="mt-1 section-title">Enstaka match eller cup</h2>
+            <AdminForm action={createMatch} submitLabel="Skapa" className="mt-4 space-y-3">
+              <TeamSelect teams={teams} />
+              <label className="block">
+                <span className={label}>Typ</span>
+                <select name="kind" className={`${field} mt-1`}>
+                  <option value="MATCH">Match</option>
+                  <option value="CUP">Cup</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className={label}>Startar</span>
+                <input name="startsAt" type="datetime-local" required className={`${field} mt-1`} />
+              </label>
+              <label className="block">
+                <span className={label}>Slutar (valfritt)</span>
+                <input name="endsAt" type="datetime-local" className={`${field} mt-1`} />
+              </label>
+              <input name="opponent" required placeholder="Motståndare, eller cupens namn" className={field} />
+              <input name="location" required placeholder="Plats" className={field} />
+              <select name="isHome" className={field}>
+                <option value="true">Hemma</option>
+                <option value="false">Borta</option>
+              </select>
+            </AdminForm>
+          </Card>
+          <Card className="p-5">
+            <Eyebrow>Match &amp; cup</Eyebrow>
+            <h2 className="mt-1 section-title">Återkommande matcher</h2>
+            <AdminForm action={createMatchSeries} submitLabel="Skapa serie" className="mt-4 space-y-3">
+              <TeamSelect teams={teams} />
+              <label className="block">
+                <span className={label}>Typ</span>
+                <select name="kind" className={`${field} mt-1`}>
+                  <option value="MATCH">Match</option>
+                  <option value="CUP">Cup</option>
+                </select>
+              </label>
+              <WeekdayPicker selected={DEFAULT_MATCH_WEEKDAYS} />
+              <SeriesPeriodFields defaultTime={DEFAULT_MATCH_TIME} from={seriesStart} to={seriesEnd} />
+              <input name="opponent" placeholder="Motståndare (valfritt)" className={field} />
+              <input name="location" required placeholder="Plats" className={field} />
+              <select name="isHome" className={field}>
+                <option value="true">Hemma</option>
+                <option value="false">Borta</option>
+              </select>
+              <p className="text-xs text-ink-subtle">
+                Lämna motståndaren tom om lottningen inte är klar – varje match kan fyllas i för sig efteråt.
+              </p>
+            </AdminForm>
+          </Card>
+        </div>
+
         <div className="grid gap-5 xl:grid-cols-2">
           <Card className="p-5">
             <h2 className="section-title">Senaste träningarna</h2>
@@ -118,13 +296,16 @@ export default async function AdminActivitiesPage() {
               {trainings.map((t) => (
                 <details key={t.id} className="group py-3">
                   <summary className="cursor-pointer list-none">
-                    <p className="font-bold">{t.team.name}</p>
+                    <p className="font-bold">
+                      {t.team.name}
+                      {t.seriesId ? <span className="ml-2 text-xs font-bold uppercase tracking-[0.06em] text-ink-subtle">Serie</span> : null}
+                    </p>
                     <p className="text-sm text-ink-subtle">{fmt.format(t.startsAt)} · {t.location} <span className="ml-1 text-ink-muted group-open:hidden">· Redigera</span></p>
                   </summary>
                   <div className="mt-3 space-y-4">
                     <AdminForm action={updateTraining} submitLabel="Spara ändringar" className="space-y-3">
                       <input type="hidden" name="trainingId" value={t.id} />
-                      <input name="startsAt" type="datetime-local" required defaultValue={localInput(t.startsAt)} className={field} />
+                      <input name="startsAt" type="datetime-local" required defaultValue={stockholmDateTimeInput(t.startsAt)} className={field} />
                       <input name="location" required defaultValue={t.location} placeholder="Plats" className={field} />
                       <input name="notes" defaultValue={t.notes ?? ""} placeholder="Anteckning (valfritt)" className={field} />
                     </AdminForm>
@@ -135,6 +316,9 @@ export default async function AdminActivitiesPage() {
                     >
                       <input type="hidden" name="trainingId" value={t.id} />
                     </AdminForm>
+                    {t.seriesId ? (
+                      <SeriesActions seriesId={t.seriesId} action={deleteTrainingSeries} label="Ta bort hela serien" />
+                    ) : null}
                     <PlayerRequestSection activity={t} activityRef={`training:${t.id}`} />
                     <Link href={`/admin/lagindelning/training/${t.id}`} className="block h-10 rounded-xl border border-divider text-center text-sm font-bold leading-10 text-ink">
                       Lagindelning
@@ -156,20 +340,35 @@ export default async function AdminActivitiesPage() {
                 <details key={m.id} className="group py-3">
                   <summary className="cursor-pointer list-none">
                     <p className="font-bold">
-                      {m.team.name} – {m.opponent}
+                      {m.team.name} – {matchShortTitle(m)}
                       {m.homeScore !== null && m.awayScore !== null ? ` (${m.isHome ? `${m.homeScore}–${m.awayScore}` : `${m.awayScore}–${m.homeScore}`})` : ""}
+                      {m.seriesId ? <span className="ml-2 text-xs font-bold uppercase tracking-[0.06em] text-ink-subtle">Serie</span> : null}
                     </p>
                     <p className="text-sm text-ink-subtle">{fmt.format(m.startsAt)} · {m.location} <span className="ml-1 text-ink-muted group-open:hidden">· Redigera</span></p>
                   </summary>
                   <div className="mt-3 space-y-4">
                     <AdminForm action={updateMatch} submitLabel="Spara ändringar" className="space-y-3">
                       <input type="hidden" name="matchId" value={m.id} />
-                      <input name="startsAt" type="datetime-local" required defaultValue={localInput(m.startsAt)} className={field} />
-                      <input name="opponent" required defaultValue={m.opponent} placeholder="Motståndare" className={field} />
+                      <label className="block">
+                        <span className={label}>Typ</span>
+                        <select name="kind" defaultValue={m.kind} className={`${field} mt-1`}>
+                          <option value="MATCH">Match</option>
+                          <option value="CUP">Cup</option>
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className={label}>Startar</span>
+                        <input name="startsAt" type="datetime-local" required defaultValue={stockholmDateTimeInput(m.startsAt)} className={`${field} mt-1`} />
+                      </label>
+                      <label className="block">
+                        <span className={label}>Slutar (valfritt)</span>
+                        <input name="endsAt" type="datetime-local" defaultValue={m.endsAt ? stockholmDateTimeInput(m.endsAt) : ""} className={`${field} mt-1`} />
+                      </label>
+                      <input name="opponent" required defaultValue={m.opponent} placeholder="Motståndare, eller cupens namn" className={field} />
                       <input name="location" required defaultValue={m.location} placeholder="Plats" className={field} />
                       <select name="isHome" defaultValue={String(m.isHome)} className={field}>
-                        <option value="true">Hemmamatch</option>
-                        <option value="false">Bortamatch</option>
+                        <option value="true">Hemma</option>
+                        <option value="false">Borta</option>
                       </select>
                       <div className="grid grid-cols-2 gap-2">
                         <label className="text-xs font-bold">
@@ -185,11 +384,14 @@ export default async function AdminActivitiesPage() {
                     </AdminForm>
                     <AdminForm
                       action={deleteMatch}
-                      submitLabel="Ta bort match"
+                      submitLabel={`Ta bort ${m.kind === "CUP" ? "cup" : "match"}`}
                       submitClassName="h-10 w-full rounded-xl border border-signal text-sm font-bold text-signal"
                     >
                       <input type="hidden" name="matchId" value={m.id} />
                     </AdminForm>
+                    {m.seriesId ? (
+                      <SeriesActions seriesId={m.seriesId} action={deleteMatchSeries} label="Ta bort hela serien" />
+                    ) : null}
                     <PlayerRequestSection activity={m} activityRef={`match:${m.id}`} />
                     <Link href={`/admin/lagindelning/match/${m.id}`} className="block h-10 rounded-xl border border-divider text-center text-sm font-bold leading-10 text-ink">
                       Lagindelning

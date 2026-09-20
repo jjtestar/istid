@@ -5,6 +5,7 @@ import { HighlightFieldsSelect } from "@/components/admin/CascadingSelects";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { DEFAULT_SEASON } from "@/lib/current-user";
+import { matchShortTitle } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
@@ -20,7 +21,7 @@ export default async function AdminHighlightsPage() {
     // started yet — older seasons are historical data and shouldn't receive new content.
     prisma.team.findMany({ where: { archivedAt: null, season: { gte: DEFAULT_SEASON } }, orderBy: [{ season: "asc" }, { name: "asc" }] }),
     prisma.training.findMany({ orderBy: { startsAt: "desc" }, take: 60, select: { id: true, teamId: true, startsAt: true, location: true } }),
-    prisma.match.findMany({ orderBy: { startsAt: "desc" }, take: 60, select: { id: true, teamId: true, startsAt: true, opponent: true } }),
+    prisma.match.findMany({ orderBy: { startsAt: "desc" }, take: 60, select: { id: true, teamId: true, startsAt: true, opponent: true, kind: true } }),
     prisma.teamMember.findMany({
       where: { team: { archivedAt: null, season: { gte: DEFAULT_SEASON } } },
       orderBy: { user: { name: "asc" } },
@@ -41,7 +42,7 @@ export default async function AdminHighlightsPage() {
 
   const activities = [
     ...trainings.map((t) => ({ id: t.id, teamId: t.teamId, label: `${date(t.startsAt)} · ${t.location}`, kind: "training" as const })),
-    ...matches.map((m) => ({ id: m.id, teamId: m.teamId, label: `${date(m.startsAt)} – ${m.opponent}`, kind: "match" as const })),
+    ...matches.map((m) => ({ id: m.id, teamId: m.teamId, label: `${date(m.startsAt)} – ${matchShortTitle(m)}`, kind: "match" as const })),
   ];
   const rosterPlayers = members.map((m) => ({ id: m.userId, teamId: m.teamId, label: m.user.name ?? "Namnlös spelare" }));
 
@@ -51,7 +52,7 @@ export default async function AdminHighlightsPage() {
     const label = h.training
       ? `Träning · ${date(h.training.startsAt)} · ${h.training.location} · ${h.team.name}`
       : h.match
-        ? `Match · ${date(h.match.startsAt)} – ${h.match.opponent} · ${h.team.name}`
+        ? `${h.match.kind === "CUP" ? "Cup" : "Match"} · ${date(h.match.startsAt)} – ${h.match.opponent} · ${h.team.name}`
         : "Utan koppling till match/träning";
     if (!groups.has(key)) groups.set(key, { label, items: [] });
     groups.get(key)!.items.push(h);

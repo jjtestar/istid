@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatisticsPlayerPicker } from "@/components/StatisticsPlayerPicker";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
-import { formatDateHeader } from "@/lib/format";
+import { formatDateHeader, matchTitle } from "@/lib/format";
 import { getStats, getTeamStats } from "@/lib/queries";
 
 type StatisticsView = "spelare" | "topplistor" | "laget";
@@ -186,7 +186,7 @@ export default async function StatistikPage({
                       >
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[15px] font-semibold text-ink">
-                            {matchStat.match.isHome ? "Hemma" : "Borta"} mot {matchStat.match.opponent}
+                            {matchTitle(matchStat.match)}
                           </div>
                           <div className="text-[12px] text-ink-subtle">
                             {formatDateHeader(matchStat.match.startsAt)}

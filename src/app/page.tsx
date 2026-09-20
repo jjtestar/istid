@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { InstallAppButton } from "@/components/PwaProvider";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
-import { formatDateHeader, formatTime } from "@/lib/format";
+import { formatDateHeader, formatTime, matchTitle } from "@/lib/format";
 import { getAnnouncementsForTeam, getCalendarEvents, getGroupedTeamHighlights } from "@/lib/queries";
 
 const HIGHLIGHT_TYPE_LABELS: Record<string, string> = { GOAL: "Mål", SAVE: "Räddning", BLOOPER: "Blooper", OTHER: "Övrigt" };
@@ -114,9 +114,7 @@ export default async function Home() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-lg font-bold text-ink">
-                    {latest.kind === "training"
-                      ? "Träning"
-                      : `${latest.item.isHome ? "Hemma" : "Borta"} vs ${latest.item.opponent}`}
+                    {latest.kind === "training" ? "Träning" : matchTitle(latest.item)}
                   </div>
                   <div className="mt-1 text-sm text-ink-subtle">
                     {formatDateHeader(latest.item.startsAt)} · {formatTime(latest.item.startsAt)}

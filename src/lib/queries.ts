@@ -1,3 +1,4 @@
+import { matchTitle } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 export async function getDashboardData(userId: string, teamId: string) {
@@ -299,7 +300,7 @@ export async function getGroupedTeamHighlights(teamId: string) {
     const label = highlight.training
       ? `Träning · ${highlight.training.location}`
       : highlight.match
-        ? `${highlight.match.isHome ? "Hemma" : "Borta"} vs ${highlight.match.opponent}`
+        ? matchTitle(highlight.match)
         : "Klipp";
     if (!groups.has(key)) groups.set(key, { key, date, label, items: [] });
     groups.get(key)!.items.push(highlight);

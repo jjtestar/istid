@@ -3,6 +3,7 @@ import { AdminHeader } from "@/components/AdminHeader";
 import { LineupEditor } from "@/components/admin/LineupEditor";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
+import { matchTitle } from "@/lib/format";
 import { LineupData } from "@/lib/lineup";
 import { prisma } from "@/lib/prisma";
 
@@ -29,7 +30,10 @@ export default async function AdminLineupPage({
     orderBy: { jerseyNo: "asc" },
   });
 
-  const title = kind === "training" ? "Träning" : `Match – ${(activity as { opponent: string }).opponent}`;
+  const title =
+    kind === "training"
+      ? "Träning"
+      : matchTitle(activity as { kind: "MATCH" | "CUP"; isHome: boolean; opponent: string });
 
   return (
     <div>

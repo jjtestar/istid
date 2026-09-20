@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { SeasonSwitcher } from "@/components/SeasonSwitcher";
 import { Card, Eyebrow, StatusLabel } from "@/components/ui";
 import { DEFAULT_SEASON, getSessionUser, getUserSeasonTeams, getUserSeasons } from "@/lib/current-user";
-import { endTime, formatDateHeader, formatMonthYear, formatTime } from "@/lib/format";
+import { endTime, formatDateHeader, formatMonthYear, formatTime, matchTitle } from "@/lib/format";
 import { RsvpQuickButton } from "@/components/RsvpQuickButton";
 import { getCalendarEventsForTeams } from "@/lib/queries";
 
@@ -113,10 +113,7 @@ export default async function KalenderPage({
               <div className="mt-2 grid gap-2.5 xl:grid-cols-2">
                 {dayEvents.map(({ kind, item }) => {
                   const going = item.registrations[0]?.status === "GOING";
-                  const title =
-                    kind === "training"
-                      ? "Träning"
-                      : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
+                  const title = kind === "training" ? "Träning" : matchTitle(item);
                   const respond = kind === "training" ? respondToTraining : respondToMatch;
                   const idField = kind === "training" ? "trainingId" : "matchId";
 
@@ -126,7 +123,11 @@ export default async function KalenderPage({
                         <div className="w-[58px] shrink-0 border-r border-divider pr-3">
                           <div className="text-lg font-bold text-ink">{formatTime(item.startsAt)}</div>
                           <div className="text-xs text-ink-subtle">
-                            {formatTime(endTime(item.startsAt, kind === "training" ? 90 : 120))}
+                            {formatTime(
+                              kind === "match" && item.endsAt
+                                ? item.endsAt
+                                : endTime(item.startsAt, kind === "training" ? 90 : 120),
+                            )}
                           </div>
                         </div>
                         <div className="min-w-0 flex-1">

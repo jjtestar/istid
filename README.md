@@ -57,7 +57,13 @@ Grundmodellen finns i `prisma/schema.prisma`:
 
 - `User` / `Team` / `TeamMember`
 - `Training` + `TrainingRegistration` (anmälan till träning)
-- `Match` + `MatchRegistration` (anmälan till match)
+- `Match` + `MatchRegistration` (anmälan till match). `Match.kind` skiljer en
+  vanlig match från en cup — för en cup bär `opponent` cupens namn och
+  `endsAt` säger när den är slut.
+- `Training.seriesId` / `Match.seriesId` binder ihop tillfällen som skapats i
+  samma återkommande serie i **Admin → Aktiviteter**, så att hela serien kan
+  tas bort på en gång. Formulären där är förifyllda med lagets grundschema:
+  träning tisdag och torsdag, match på söndag.
 - `MatchStat` (mål, assist, utvisningsminuter per spelare och match)
 
 Utöka schemat och kör `npm run db:migrate` för att skapa en ny migration.
@@ -69,3 +75,5 @@ Utöka schemat och kör `npm run db:migrate` för att skapa en ny migration.
 - `npm run db:migrate` — skapa/uppdatera lokal databas + migrationsfil
 - `npm run db:deploy` — kör befintliga migrationer mot en databas (t.ex. prod)
 - `npm run db:studio` — Prisma Studio, GUI mot databasen
+- `npm run test:schedule` — kontrollerar datumlogiken för återkommande
+  aktiviteter (veckodagar, varannan vecka, sommartid)

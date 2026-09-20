@@ -4,6 +4,7 @@ import { AdminHeader } from "@/components/AdminHeader";
 import { TeamActivityPlayerSelect } from "@/components/admin/CascadingSelects";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
+import { matchShortTitle } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
@@ -32,7 +33,7 @@ export default async function AdminStatsPage() {
             <AdminForm action={saveMatchStat} submitLabel="Spara matchstatistik" className="mt-4 space-y-3">
               <TeamActivityPlayerSelect
                 teams={teamOptions}
-                activities={matches.map((m) => ({ id: m.id, teamId: m.teamId, label: `${when(m.startsAt)} – ${m.opponent}` }))}
+                activities={matches.map((m) => ({ id: m.id, teamId: m.teamId, label: `${when(m.startsAt)} – ${matchShortTitle(m)}` }))}
                 players={playerOptions}
                 activityName="matchId"
                 activityLabel="matcher"

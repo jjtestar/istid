@@ -1,11 +1,13 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { audit, requireAdmin } from "@/lib/admin";
 import { DEFAULT_SEASON } from "@/lib/current-user";
 import { isValidLineupData } from "@/lib/lineup";
 import { prisma } from "@/lib/prisma";
+import { stockholmDateTime, weeklyOccurrences } from "@/lib/schedule";
 
 const POSITIONS = new Set(["Forward", "Back", "Målvakt"]);
 
@@ -20,18 +22,28 @@ function optionalScore(formData: FormData, key: string) {
     ? { ok: true as const, value: parsed }
     : { ok: false as const, value: null };
 }
-function stockholmDateTime(value: string) {
-  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/.exec(value);
-  if (!match) return null;
-  const guess = new Date(`${match[1]}T${match[2]}:00Z`);
-  const zone = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Stockholm", timeZoneName: "longOffset" })
-    .formatToParts(guess).find((part) => part.type === "timeZoneName")?.value ?? "GMT+00:00";
-  const offset = /GMT([+-])(\d{2}):(\d{2})/.exec(zone);
-  const minutes = offset ? (Number(offset[2]) * 60 + Number(offset[3])) * (offset[1] === "+" ? 1 : -1) : 0;
-  return new Date(guess.getTime() - minutes * 60_000);
-}
 function calendarDate(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00Z`) : null;
+}
+/** Tomt fält = ingen tid alls; annars måste det gå att tolka. */
+function optionalDateTime(formData: FormData, key: string) {
+  const value = text(formData, key);
+  if (value === "") return { ok: true as const, value: null };
+  const parsed = stockholmDateTime(value);
+  return parsed ? { ok: true as const, value: parsed } : { ok: false as const, value: null };
+}
+function matchKind(value: string) {
+  return value === "CUP" ? ("CUP" as const) : value === "MATCH" || value === "" ? ("MATCH" as const) : null;
+}
+/** Veckodagar, tider och period från ett formulär för en återkommande serie. */
+function seriesInput(formData: FormData) {
+  return {
+    from: text(formData, "from"),
+    to: text(formData, "to"),
+    weekdays: formData.getAll("weekdays").map((day) => Number(day)).filter(Number.isInteger),
+    time: text(formData, "time"),
+    intervalWeeks: Number(text(formData, "intervalWeeks") || "1"),
+  };
 }
 function position(value: string) { return POSITIONS.has(value) ? value : null; }
 
@@ -170,43 +182,120 @@ export async function deleteTraining(_prev: FormState, formData: FormData): Prom
   return { success: "Träningen togs bort." };
 }
 
+/**
+ * Skapar en hel serie träningar på valda veckodagar i en period, t.ex. lagets
+ * grundschema med träning tisdag och torsdag hela säsongen. Tillfällen som
+ * redan finns på laget vid samma tidpunkt hoppas över, så att formuläret kan
+ * skickas igen utan att det blir dubbletter.
+ */
+export async function createTrainingSeries(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const teamId = text(formData, "teamId");
+  const location = text(formData, "location");
+  const notes = text(formData, "notes");
+  if (!location) return { error: "Ange en plats." };
+  const team = await prisma.team.findUnique({ where: { id: teamId }, select: { id: true, season: true } });
+  if (!team) return { error: "Laget hittades inte." };
+  if (team.season !== DEFAULT_SEASON) return { error: "Går inte att skapa träningar för en avslutad säsong." };
+
+  const series = weeklyOccurrences(seriesInput(formData));
+  if (!series.ok) return { error: series.error };
+
+  const existing = await prisma.training.findMany({
+    where: {
+      teamId,
+      startsAt: { gte: series.occurrences[0], lte: series.occurrences[series.occurrences.length - 1] },
+    },
+    select: { startsAt: true },
+  });
+  const taken = new Set(existing.map((training) => training.startsAt.getTime()));
+  const fresh = series.occurrences.filter((startsAt) => !taken.has(startsAt.getTime()));
+  if (fresh.length === 0) return { success: "Alla tillfällen i perioden fanns redan – inget nytt skapades." };
+
+  const seriesId = randomUUID();
+  await prisma.training.createMany({
+    data: fresh.map((startsAt) => ({ teamId, startsAt, location, notes: notes || null, seriesId })),
+  });
+  await audit(admin.id, "Skapade träningsserie", "Training", seriesId, `${fresh.length} träningar`);
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/aktiviteter");
+  const skipped = series.occurrences.length - fresh.length;
+  return {
+    success: `${fresh.length} träningar skapades${skipped ? ` (${skipped} fanns redan)` : ""}.`,
+  };
+}
+
+/** Tar bort de kommande tillfällena i en träningsserie. Historiken lämnas kvar. */
+export async function deleteTrainingSeries(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const seriesId = text(formData, "seriesId");
+  if (!seriesId) return { error: "Serien hittades inte." };
+  const { count } = await prisma.training.deleteMany({ where: { seriesId, startsAt: { gte: new Date() } } });
+  if (count === 0) return { error: "Serien har inga kommande träningar kvar." };
+  await audit(admin.id, "Tog bort träningsserie", "Training", seriesId, `${count} träningar`);
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/aktiviteter");
+  return { success: `${count} kommande träningar togs bort.` };
+}
+
 export async function createMatch(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireAdmin();
   const teamId = text(formData, "teamId");
   const startsAt = stockholmDateTime(text(formData, "startsAt"));
+  const endsAt = optionalDateTime(formData, "endsAt");
   const opponent = text(formData, "opponent");
   const location = text(formData, "location");
   const isHome = formData.get("isHome") === "true";
+  const kind = matchKind(text(formData, "kind"));
   if (!startsAt) return { error: "Ange ett giltigt datum och tid." };
-  if (!opponent) return { error: "Ange motståndare." };
+  if (!endsAt.ok) return { error: "Ange en giltig sluttid, eller lämna fältet tomt." };
+  if (endsAt.value && endsAt.value <= startsAt) return { error: "Sluttiden måste komma efter starttiden." };
+  if (!kind) return { error: "Välj om det är en match eller en cup." };
+  if (!opponent) return { error: kind === "CUP" ? "Ange cupens namn." : "Ange motståndare." };
   if (!location) return { error: "Ange en plats." };
   const team = await prisma.team.findUnique({ where: { id: teamId }, select: { id: true, season: true } });
   if (!team) return { error: "Laget hittades inte." };
   if (team.season !== DEFAULT_SEASON) return { error: "Går inte att skapa matcher för en avslutad säsong." };
-  const match = await prisma.match.create({ data: { teamId, startsAt, opponent, location, isHome } });
-  await audit(admin.id, "Skapade match", "Match", match.id, opponent);
+  const match = await prisma.match.create({
+    data: { teamId, startsAt, endsAt: endsAt.value, opponent, location, isHome, kind },
+  });
+  await audit(admin.id, kind === "CUP" ? "Skapade cup" : "Skapade match", "Match", match.id, opponent);
   revalidatePath("/", "layout");
   revalidatePath("/admin/aktiviteter");
-  return { success: "Matchen skapades." };
+  return { success: kind === "CUP" ? "Cupen skapades." : "Matchen skapades." };
 }
 
 export async function updateMatch(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireAdmin();
   const id = text(formData, "matchId");
   const startsAt = stockholmDateTime(text(formData, "startsAt"));
+  const endsAt = optionalDateTime(formData, "endsAt");
   const opponent = text(formData, "opponent");
   const location = text(formData, "location");
   const isHome = formData.get("isHome") === "true";
+  const kind = matchKind(text(formData, "kind"));
   const homeScore = optionalScore(formData, "homeScore");
   const awayScore = optionalScore(formData, "awayScore");
   if (!startsAt) return { error: "Ange ett giltigt datum och tid." };
-  if (!opponent) return { error: "Ange motståndare." };
+  if (!endsAt.ok) return { error: "Ange en giltig sluttid, eller lämna fältet tomt." };
+  if (endsAt.value && endsAt.value <= startsAt) return { error: "Sluttiden måste komma efter starttiden." };
+  if (!kind) return { error: "Välj om det är en match eller en cup." };
+  if (!opponent) return { error: kind === "CUP" ? "Ange cupens namn." : "Ange motståndare." };
   if (!location) return { error: "Ange en plats." };
   if (!homeScore.ok || !awayScore.ok) return { error: "Resultatet måste vara heltal 0–99, eller lämnas tomt." };
   const match = await prisma.match
     .update({
       where: { id },
-      data: { startsAt, opponent, location, isHome, homeScore: homeScore.value, awayScore: awayScore.value },
+      data: {
+        startsAt,
+        endsAt: endsAt.value,
+        opponent,
+        location,
+        isHome,
+        kind,
+        homeScore: homeScore.value,
+        awayScore: awayScore.value,
+      },
     })
     .catch(() => null);
   if (!match) return { error: "Matchen hittades inte." };
@@ -227,6 +316,64 @@ export async function deleteMatch(_prev: FormState, formData: FormData): Promise
   revalidatePath("/admin/aktiviteter");
   revalidatePath("/statistik");
   return { success: "Matchen togs bort." };
+}
+
+/**
+ * Samma sak för matcher och cuper: en serie på valda veckodagar, t.ex. match
+ * varje söndag. Motståndare fylls i per match efteråt när lottningen är klar.
+ */
+export async function createMatchSeries(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const teamId = text(formData, "teamId");
+  const location = text(formData, "location");
+  const isHome = formData.get("isHome") === "true";
+  const kind = matchKind(text(formData, "kind"));
+  const opponent = text(formData, "opponent") || (kind === "CUP" ? "Cup" : "Motståndare meddelas");
+  if (!kind) return { error: "Välj om serien gäller matcher eller cuper." };
+  if (!location) return { error: "Ange en plats." };
+  const team = await prisma.team.findUnique({ where: { id: teamId }, select: { id: true, season: true } });
+  if (!team) return { error: "Laget hittades inte." };
+  if (team.season !== DEFAULT_SEASON) return { error: "Går inte att skapa matcher för en avslutad säsong." };
+
+  const series = weeklyOccurrences(seriesInput(formData));
+  if (!series.ok) return { error: series.error };
+
+  const existing = await prisma.match.findMany({
+    where: {
+      teamId,
+      startsAt: { gte: series.occurrences[0], lte: series.occurrences[series.occurrences.length - 1] },
+    },
+    select: { startsAt: true },
+  });
+  const taken = new Set(existing.map((match) => match.startsAt.getTime()));
+  const fresh = series.occurrences.filter((startsAt) => !taken.has(startsAt.getTime()));
+  if (fresh.length === 0) return { success: "Alla tillfällen i perioden fanns redan – inget nytt skapades." };
+
+  const seriesId = randomUUID();
+  await prisma.match.createMany({
+    data: fresh.map((startsAt) => ({ teamId, startsAt, opponent, location, isHome, kind, seriesId })),
+  });
+  await audit(admin.id, "Skapade matchserie", "Match", seriesId, `${fresh.length} tillfällen`);
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/aktiviteter");
+  const skipped = series.occurrences.length - fresh.length;
+  return {
+    success: `${fresh.length} tillfällen skapades${skipped ? ` (${skipped} fanns redan)` : ""}.`,
+  };
+}
+
+/** Tar bort de kommande tillfällena i en matchserie. Spelade matcher lämnas kvar. */
+export async function deleteMatchSeries(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const seriesId = text(formData, "seriesId");
+  if (!seriesId) return { error: "Serien hittades inte." };
+  const { count } = await prisma.match.deleteMany({ where: { seriesId, startsAt: { gte: new Date() } } });
+  if (count === 0) return { error: "Serien har inga kommande matcher kvar." };
+  await audit(admin.id, "Tog bort matchserie", "Match", seriesId, `${count} tillfällen`);
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/aktiviteter");
+  revalidatePath("/statistik");
+  return { success: `${count} kommande tillfällen togs bort.` };
 }
 
 export async function createPayment(_prev: FormState, formData: FormData): Promise<FormState> {

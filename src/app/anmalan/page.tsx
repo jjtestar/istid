@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { RsvpQuickButton } from "@/components/RsvpQuickButton";
 import { Card, Eyebrow } from "@/components/ui";
 import { DEFAULT_SEASON, getSessionUser, getUserSeasonTeams } from "@/lib/current-user";
-import { formatDateHeader, formatTime } from "@/lib/format";
+import { formatDateHeader, formatTime, matchTitle } from "@/lib/format";
 import { LineupData } from "@/lib/lineup";
 import { getActivePlayerRequests, getCalendarEventsForTeams, getUpcomingByTeam } from "@/lib/queries";
 
@@ -49,7 +49,7 @@ export default async function AnmalanPage() {
                 const activityLabel = request.training
                   ? `Träning ${formatDateHeader(request.training.startsAt)} ${formatTime(request.training.startsAt)}`
                   : request.match
-                    ? `${request.match.isHome ? "Hemma" : "Borta"} vs ${request.match.opponent}, ${formatDateHeader(request.match.startsAt)}`
+                    ? `${matchTitle(request.match)}, ${formatDateHeader(request.match.startsAt)}`
                     : "";
                 return (
                   <p key={request.id} className="text-sm text-ink">
@@ -78,9 +78,7 @@ export default async function AnmalanPage() {
               const registration = registrationByUser.get(user.id);
               const respond = isTraining ? respondToTraining : respondToMatch;
               const idField = isTraining ? "trainingId" : "matchId";
-              const title = isTraining
-                ? "Träning"
-                : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
+              const title = isTraining ? "Träning" : matchTitle(item);
               const lineup = roster.map((member) => {
                 const playerRegistration = registrationByUser.get(member.userId);
                 return {
@@ -151,7 +149,7 @@ export default async function AnmalanPage() {
             <div className="mt-2">
               {week.map(({ kind, item }) => {
                 const going = item.registrations[0]?.status === "GOING";
-                const title = kind === "training" ? "Träning" : `${item.isHome ? "Hemma" : "Borta"} vs ${item.opponent}`;
+                const title = kind === "training" ? "Träning" : matchTitle(item);
                 const respond = kind === "training" ? respondToTraining : respondToMatch;
                 const idField = kind === "training" ? "trainingId" : "matchId";
                 return (

@@ -30,3 +30,17 @@ export function formatMonthYear(date: Date) {
 export function endTime(date: Date, durationMinutes = 90) {
   return new Date(date.getTime() + durationMinutes * 60 * 1000);
 }
+
+/**
+ * Rubriken för en match eller cup. En cup har inget enskilt motståndarlag —
+ * där bär `opponent` i stället arrangemangets namn.
+ */
+export function matchTitle(match: { kind: "MATCH" | "CUP"; isHome: boolean; opponent: string }) {
+  if (match.kind === "CUP") return `Cup · ${match.opponent}`;
+  return `${match.isHome ? "Hemma" : "Borta"} vs ${match.opponent}`;
+}
+
+/** Kort etikett för listor där laget redan framgår, t.ex. "Cup: Vårcupen". */
+export function matchShortTitle(match: { kind: "MATCH" | "CUP"; opponent: string }) {
+  return match.kind === "CUP" ? `Cup: ${match.opponent}` : match.opponent;
+}
