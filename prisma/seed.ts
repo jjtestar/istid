@@ -1,13 +1,50 @@
+import { randomBytes } from "node:crypto";
+
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
+
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL saknas — seed-scriptet vet inte vilken databas det skulle fylla.");
+}
+
+// This script deletes a team and overwrites every account it touches, against
+// whatever DATABASE_URL happens to point at. A local database is fair game;
+// anything else has to be named in SEED_ALLOW_HOST, so a .env copied from
+// production can't be seeded by a reflex `npm run db:seed`.
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+function databaseHost(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^\[|\]$/g, "");
+  } catch {
+    // Fail closed: an unparseable URL is never treated as local.
+    return "";
+  }
+}
+
+const host = databaseHost(connectionString);
+if (!LOCAL_HOSTS.has(host) && process.env.SEED_ALLOW_HOST?.trim() !== host) {
+  throw new Error(
+    `Seed-scriptet vägrar köra mot "${host || "okänd värd"}" eftersom det raderar och skriver över data.\n` +
+      "Är det verkligen din egen utvecklingsdatabas? Kör i så fall:\n" +
+      `  SEED_ALLOW_HOST="${host}" npm run db:seed`,
+  );
+}
+
+// The demo password was once a literal here. In a public repo that publishes a
+// working credential for every seeded account, so it comes from the
+// environment instead — or is generated and printed once, per run.
+const configuredPassword = process.env.SEED_PASSWORD?.trim();
+const seedPassword = configuredPassword || randomBytes(9).toString("base64url");
 
 // Runs as a plain Node CLI script (never in Vercel's edge/serverless runtime),
 // so it uses the standard node-postgres adapter over a normal TCP connection
 // instead of @neondatabase/serverless's WebSocket-tunnelled one from
 // src/lib/prisma.ts — that lets it run against a local Postgres too, not
 // just Neon's proxy endpoint.
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 const DAY = 24 * 60 * 60 * 1000;
 const CURRENT_SEASON = "2026/27";
@@ -128,7 +165,7 @@ function gameStats(
 }
 
 async function main() {
-  const passwordHash = await bcrypt.hash("istid1234", 10);
+  const passwordHash = await bcrypt.hash(seedPassword, 12);
 
   await prisma.team.deleteMany({ where: { name: "A-laget" } });
 
@@ -299,7 +336,12 @@ async function main() {
     }
   }
 
-  console.log("Seeded three hockey teams across three seasons with individual player statistics.");
+  console.log(`Seedade tre hockeylag över tre säsonger mot ${host}.`);
+  console.log(
+    configuredPassword
+      ? "Lösenord för de seedade kontona: värdet i SEED_PASSWORD."
+      : `Lösenord för de seedade kontona (visas bara nu): ${seedPassword}`,
+  );
 }
 
 main()

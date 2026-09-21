@@ -89,6 +89,18 @@ Components. Utöver Auth.js finns exakt en API-route: `/api/my-data`
    npm run db:seed
    ```
 
+   Seeden **raderar och skriver över data** och vägrar därför köra mot något
+   annat än `localhost`. Kör du mot en egen molndatabas måste du namnge dess
+   värdnamn, så att en `.env` som pekar fel inte kan seedas av misstag:
+
+   ```bash
+   SEED_ALLOW_HOST="ep-xxx.eu-central-1.aws.neon.tech" npm run db:seed
+   ```
+
+   De seedade kontona delar ett lösenord. Sätt `SEED_PASSWORD` för att välja
+   det själv — annars genereras ett slumpmässigt som skrivs ut en gång när
+   seeden körs. Inget demolösenord ligger i koden.
+
 5. Starta dev-servern:
 
    ```bash
