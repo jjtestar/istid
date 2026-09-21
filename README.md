@@ -362,6 +362,24 @@ genomgående.
   nedladdningsbar JSON, med egen behörighetskontroll eftersom proxyn inte gör
   någon. Åldersgränsen 18 år bekräftas vid registrering.
 
+### Beroendeöversyn
+
+`package.json` har en `overrides` som tvingar upp **`deepmerge-ts` till
+`^8.0.2`**. Anledningen: `prisma` (devDependency) drar in `@prisma/config`,
+som pinnar `deepmerge-ts@7.1.5` — sårbart för stack exhaustion enligt
+[GHSA-ggr8-5vv4-36mx](https://github.com/advisories/GHSA-ggr8-5vv4-36mx).
+
+Ingen Prisma-release löser det i dag; även 7.10.0 pinnar samma version, och
+`npm audit fix --force` föreslår en *nedgradering* till `prisma@6.12.0`.
+Kör inte den. Overriden ger `npm audit` noll varningar och `prisma validate`
+och `prisma generate` fungerar oförändrat.
+
+Exponeringen var aldrig i produktion: `@prisma/client` har noll
+runtime-beroenden (`prisma` är en optional peer), och den enda
+`deepmerge`-användningen i `@prisma/config` ligger i inläsningen av en
+`prisma.config.ts`. Overriden finns för att en framtida, verklig varning inte
+ska drunkna i brus — ta bort den när Prisma själv uppgraderar.
+
 ## Prestanda och bundlestorlek
 
 Några val är medvetna och bör inte rullas tillbaka utan att mäta:

@@ -105,6 +105,11 @@ add the constraint and a migration.
 - Validate anything a client sends that indexes into team data: lineups
   against the roster (`isValidLineupData`), highlight URLs against
   http/https, enum-like fields against an allowlist.
+- The `overrides` entry pinning `deepmerge-ts` to `^8.0.2` is deliberate — it
+  patches a transitive advisory the Prisma CLI has not fixed upstream. Keep it
+  until Prisma ships its own bump, and never run `npm audit fix --force` here:
+  it proposes downgrading `prisma` seven minor versions. See README,
+  "Beroendeöversyn".
 
 # PWA
 
