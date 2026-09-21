@@ -16,9 +16,6 @@
     "test:pwa": "node --require next/dist/server/node-environment --import tsx tests/pwa.mjs",
     "test:schedule": "node --import tsx tests/schedule.mjs"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "overrides": {
     "deepmerge-ts": "^8.0.2"
   },

@@ -71,6 +71,11 @@ Components. Utöver Auth.js finns exakt en API-route: `/api/my-data`
      den, och samma hemlighet nycklar HMAC-hashningen av PIN-koder — byter du
      den blir alla utestående inbjudningar ogiltiga.
 
+   `prisma.config.ts` läser in `.env.local` och `.env` själv. Prisma CLI
+   slutar läsa in dem automatiskt så fort en konfigurationsfil finns, och
+   utan den raden skulle `db:migrate` och `db:seed` sakna `DATABASE_URL`
+   lokalt.
+
 3. Skapa databastabellerna:
 
    ```bash
@@ -118,6 +123,11 @@ src/
   components/     Delade UI-primitiver och klientkomponenter
   lib/            Datahämtning, behörighet, formatering, domänlogik
   proxy.ts        Next 16:s efterföljare till middleware (ren tokenkontroll)
+prisma/
+  schema.prisma   Datamodellen
+  migrations/     En mapp per migration, körs av `prisma migrate deploy`
+  seed.ts         Exempeldata
+prisma.config.ts  Prisma CLI:s konfiguration (schemasökväg, seed, .env)
 ```
 
 `src/lib/` är medvetet fritt från serverberoenden där klientkomponenter
@@ -374,11 +384,12 @@ Ingen Prisma-release löser det i dag; även 7.10.0 pinnar samma version, och
 Kör inte den. Overriden ger `npm audit` noll varningar och `prisma validate`
 och `prisma generate` fungerar oförändrat.
 
-Exponeringen var aldrig i produktion: `@prisma/client` har noll
-runtime-beroenden (`prisma` är en optional peer), och den enda
-`deepmerge`-användningen i `@prisma/config` ligger i inläsningen av en
-`prisma.config.ts`. Overriden finns för att en framtida, verklig varning inte
-ska drunkna i brus — ta bort den när Prisma själv uppgraderar.
+Exponeringen ligger inte i produktion: `@prisma/client` har noll
+runtime-beroenden (`prisma` är en optional peer), så CLI:t körs bara lokalt
+och i bygget. Den enda `deepmerge`-användningen i `@prisma/config` ligger i
+inläsningen av `prisma.config.ts` — vår egen fil, inte något utomstående kan
+mata in. Overriden finns för att en framtida, verklig varning inte ska drunkna
+i brus; ta bort den när Prisma själv uppgraderar.
 
 ## Prestanda och bundlestorlek
 

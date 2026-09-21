@@ -149,3 +149,8 @@ npm run test:pwa        # if you touched the proxy, manifest or service worker
 
 Schema changes need a migration (`npm run db:migrate`) committed alongside the
 code — production runs `prisma migrate deploy` on every deploy.
+
+Prisma CLI is configured in `prisma.config.ts`, not `package.json#prisma`
+(removed in Prisma 7). Because a config file exists, the CLI no longer loads
+`.env` itself — the config file does it. Keep that loader if you touch the
+file, or every local `db:*` command loses its `DATABASE_URL`.
