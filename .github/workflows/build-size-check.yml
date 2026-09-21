@@ -28,6 +28,12 @@ jobs:
 
       - run: npm ci
 
+      # `next typegen` first: route types like LayoutProps<"/"> are generated
+      # into .next/types, so a bare `tsc --noEmit` would fail on a fresh
+      # checkout. Runs before the build so a type error fails fast.
+      - name: Typecheck
+        run: npm run typecheck
+
       - run: npx next build
 
       - name: Check function bundle sizes

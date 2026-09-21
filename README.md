@@ -410,8 +410,8 @@ Några val är medvetna och bör inte rullas tillbaka utan att mäta:
   20 MB — den regressionen kostade en gång ~1,8 GB Function Storage per
   deploy.
 
-CI (`.github/workflows/`) kör `next build` följt av bundlekontrollen på varje
-pull request mot `main`.
+CI (`.github/workflows/`) kör `npm run typecheck`, `next build` och
+bundlekontrollen på varje pull request mot `main`.
 
 ## Tester
 
@@ -430,8 +430,10 @@ proxy-matchern med Next:s `unstable_doesMiddlewareMatch`.
 Kör `tsc --noEmit` direkt och du får `Cannot find name 'LayoutProps'`. Typer
 som `LayoutProps<"/">` genereras av Next till `.next/types` och finns inte
 förrän något har byggt dem, så `typecheck` kör `next typegen` först. Det
-skriver också `next-env.d.ts`, som är gitignorerad. CI behöver inget eget
-steg — `next build` typkontrollerar redan.
+skriver också `next-env.d.ts`, som är gitignorerad.
+
+CI kör `typecheck` före bygget, så ett typfel faller snabbt och med ett
+tydligare meddelande än mitt i en build.
 
 ## Scripts
 
