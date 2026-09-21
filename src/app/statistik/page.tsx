@@ -86,6 +86,7 @@ export default async function StatistikPage({
       <PageHeader title="Statistik" />
       <main className="space-y-6 px-5 pb-10">
         <ContextSwitcher
+          key={`${context.selectedTeamSlug}:${context.selectedSeason}`}
           teams={context.teams}
           seasons={context.seasons}
           selectedTeamSlug={context.selectedTeamSlug}

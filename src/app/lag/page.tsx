@@ -29,6 +29,7 @@ export default async function LagPage() {
       <PageHeader title="Laget" back={{ href: "/mer", label: "Tillbaka till Mer" }} />
       <main className="space-y-6 px-5 pb-10">
         <ContextSwitcher
+          key={`${context.selectedTeamSlug}:${context.selectedSeason}`}
           teams={context.teams}
           seasons={context.seasons}
           selectedTeamSlug={context.selectedTeamSlug}

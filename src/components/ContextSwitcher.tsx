@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { changeAppContext } from "@/app/actions";
 
 type TeamOption = { name: string; slug: string };
@@ -18,11 +18,13 @@ export function ContextSwitcher({
   selectedSeason: string;
   showSeason?: boolean;
 }) {
+  // The selects are controlled, so the server's choice is the initial state and
+  // nothing mirrors it back afterwards. Callers pass a key built from the same
+  // two values, so a context change from elsewhere (a link that swaps the query
+  // string, say) remounts this with the new choice already in place instead of
+  // rendering the stale one first and correcting it in an effect.
   const [teamValue, setTeamValue] = useState(selectedTeamSlug);
   const [seasonValue, setSeasonValue] = useState(selectedSeason);
-
-  useEffect(() => setTeamValue(selectedTeamSlug), [selectedTeamSlug]);
-  useEffect(() => setSeasonValue(selectedSeason), [selectedSeason]);
 
   async function submitContext(formData: FormData) {
     await changeAppContext(formData);
