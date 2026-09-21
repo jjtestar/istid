@@ -421,10 +421,17 @@ Två fristående Node-skript, körda med `tsx`:
 npm run test:schedule   # veckodagar, varannan vecka, sommartid, seriegränser
 npm run test:pwa        # proxy-matchern och service workerns beteende
 npm run lint            # ESLint
+npm run typecheck       # next typegen && tsc --noEmit
 ```
 
 `test:pwa` kör service workern i en `vm`-sandbox och kontrollerar
 proxy-matchern med Next:s `unstable_doesMiddlewareMatch`.
+
+Kör `tsc --noEmit` direkt och du får `Cannot find name 'LayoutProps'`. Typer
+som `LayoutProps<"/">` genereras av Next till `.next/types` och finns inte
+förrän något har byggt dem, så `typecheck` kör `next typegen` först. Det
+skriver också `next-env.d.ts`, som är gitignorerad. CI behöver inget eget
+steg — `next build` typkontrollerar redan.
 
 ## Scripts
 
@@ -434,6 +441,7 @@ proxy-matchern med Next:s `unstable_doesMiddlewareMatch`.
 | `npm run build` | `prisma migrate deploy` + `prisma generate` + `next build` |
 | `npm run start` | Startar ett byggt produktionsbygge |
 | `npm run lint` | ESLint |
+| `npm run typecheck` | Genererar Next:s ruttyper och kör `tsc --noEmit` |
 | `npm run db:migrate` | Skapa/uppdatera lokal databas + migrationsfil |
 | `npm run db:deploy` | Kör befintliga migrationer mot en databas (t.ex. prod) |
 | `npm run db:seed` | Fyller databasen med exempeldata |
