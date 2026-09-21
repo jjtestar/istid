@@ -334,9 +334,11 @@ enda modulen med egna enhetstester.
   `beforeinstallprompt`, iOS-specifika instruktioner, uppdateringsprompt
   (`SKIP_WAITING`) och blockerar formulärsubmits när enheten vet att den är
   offline.
-- Proxy-matchern i `src/proxy.ts` undantar `/pwa/`, `/sw.js`,
-  `/manifest.webmanifest`, `/registrera` och `/integritet`. `npm run test:pwa`
-  verifierar exakt det.
+- Proxy-matchern i `src/proxy.ts` undantar de publika ingångarna: `/pwa/`,
+  `/sw.js`, `/manifest.webmanifest`, `/registrera` och `/integritet`, utöver
+  `api/auth`, `_next/static`, `_next/image`, `favicon.ico` och
+  `rink-background.png`. `npm run test:pwa` kontrollerar både att de är
+  undantagna och att appens egna sidor inte är det.
 
 ## Teman
 
