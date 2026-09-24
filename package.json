@@ -15,6 +15,7 @@
     "db:studio": "prisma studio",
     "check:bundle-size": "node scripts/check-function-bundle-size.mjs",
     "test:pwa": "node --require next/dist/server/node-environment --import tsx tests/pwa.mjs",
+    "test:format": "node --import tsx tests/format.mjs",
     "test:schedule": "node --import tsx tests/schedule.mjs"
   },
   "overrides": {

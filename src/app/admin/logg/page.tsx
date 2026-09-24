@@ -2,10 +2,10 @@ import Link from "next/link";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
+import { formatMediumDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 const PAGE_SIZE = 30;
-const fmt = new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" });
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
 
 export default async function AdminLogPage({
@@ -69,7 +69,7 @@ export default async function AdminLogPage({
               {logs.map((log) => (
                 <div key={log.id} className="p-4 text-sm">
                   <p className="font-bold">{log.action}</p>
-                  <p className="text-ink-subtle">{log.actor.name ?? "Administratör"} · {fmt.format(log.createdAt)} · {log.entityType}</p>
+                  <p className="text-ink-subtle">{log.actor.name ?? "Administratör"} · {formatMediumDateTime(log.createdAt)} · {log.entityType}</p>
                   {log.details ? <p className="mt-1 text-ink-muted">{log.details}</p> : null}
                 </div>
               ))}

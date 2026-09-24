@@ -5,11 +5,11 @@ import { TeamPlayerSelect } from "@/components/admin/CascadingSelects";
 import { TeamFilterSelect } from "@/components/TeamFilterSelect";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
+import { formatMediumDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
 const money = (ore: number) => new Intl.NumberFormat("sv-SE", { style: "currency", currency: "SEK", maximumFractionDigits: 2 }).format(ore / 100);
-const date = (value: Date) => new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium" }).format(value);
 const dateInput = (value: Date) => value.toISOString().slice(0, 10);
 
 export default async function AdminPaymentsPage({
@@ -78,7 +78,7 @@ export default async function AdminPaymentsPage({
                 <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="font-bold">{p.title} · {money(p.amountOre)}</p>
-                    <p className="text-sm text-ink-subtle">{p.user.name} · {p.team.name} · förfaller {date(p.dueDate)}</p>
+                    <p className="text-sm text-ink-subtle">{p.user.name} · {p.team.name} · förfaller {formatMediumDate(p.dueDate)}</p>
                     {p.note ? <p className="mt-1 text-xs text-ink-subtle">{p.note}</p> : null}
                   </div>
                   <span className={`rounded-full px-3 py-2 text-xs font-bold ${p.paidAt ? "bg-rink-crease text-success" : "bg-rink-line-red text-signal"}`}>

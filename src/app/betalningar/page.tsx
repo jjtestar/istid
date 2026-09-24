@@ -2,10 +2,10 @@ import { PageHeader } from "@/components/PageHeader";
 import { TeamFilterSelect } from "@/components/TeamFilterSelect";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUser } from "@/lib/current-user";
+import { formatMediumDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 const money = (ore: number) => new Intl.NumberFormat("sv-SE", { style: "currency", currency: "SEK", maximumFractionDigits: 2 }).format(ore / 100);
-const date = (value: Date) => new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium" }).format(value);
 
 export default async function PaymentsPage({
   searchParams,
@@ -67,11 +67,11 @@ export default async function PaymentsPage({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-bold">{p.title}</p>
-                    <p className="text-sm text-ink-subtle">{teams.length > 1 ? `${p.team.name} · ` : ""}förfaller {date(p.dueDate)}</p>
+                    <p className="text-sm text-ink-subtle">{teams.length > 1 ? `${p.team.name} · ` : ""}förfaller {formatMediumDate(p.dueDate)}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-bold">{money(p.amountOre)}</p>
-                    <p className={`text-xs font-bold ${p.paidAt ? "text-success" : "text-signal"}`}>{p.paidAt ? `Betald ${date(p.paidAt)}` : "Obetald"}</p>
+                    <p className={`text-xs font-bold ${p.paidAt ? "text-success" : "text-signal"}`}>{p.paidAt ? `Betald ${formatMediumDate(p.paidAt)}` : "Obetald"}</p>
                   </div>
                 </div>
                 {p.note ? <p className="mt-2 text-sm text-ink-subtle">{p.note}</p> : null}

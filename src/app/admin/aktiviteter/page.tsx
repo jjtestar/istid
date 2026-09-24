@@ -19,7 +19,7 @@ import { ExpandableList } from "@/components/ExpandableList";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { DEFAULT_SEASON } from "@/lib/current-user";
-import { matchShortTitle } from "@/lib/format";
+import { formatMediumDateTime, matchShortTitle } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_MATCH_TIME,
@@ -33,7 +33,6 @@ import {
 
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
 const label = "text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle";
-const fmt = new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" });
 
 const POSITION_LABEL: Record<string, string> = { GOALKEEPER: "Målvakt", SKATER: "Utespelare" };
 
@@ -300,7 +299,7 @@ export default async function AdminActivitiesPage() {
                       {t.team.name}
                       {t.seriesId ? <span className="ml-2 text-xs font-bold uppercase tracking-[0.06em] text-ink-subtle">Serie</span> : null}
                     </p>
-                    <p className="text-sm text-ink-subtle">{fmt.format(t.startsAt)} · {t.location} <span className="ml-1 text-ink-muted group-open:hidden">· Redigera</span></p>
+                    <p className="text-sm text-ink-subtle">{formatMediumDateTime(t.startsAt)} · {t.location} <span className="ml-1 text-ink-muted group-open:hidden">· Redigera</span></p>
                   </summary>
                   <div className="mt-3 space-y-4">
                     <AdminForm action={updateTraining} submitLabel="Spara ändringar" className="space-y-3">
@@ -344,7 +343,7 @@ export default async function AdminActivitiesPage() {
                       {m.homeScore !== null && m.awayScore !== null ? ` (${m.isHome ? `${m.homeScore}–${m.awayScore}` : `${m.awayScore}–${m.homeScore}`})` : ""}
                       {m.seriesId ? <span className="ml-2 text-xs font-bold uppercase tracking-[0.06em] text-ink-subtle">Serie</span> : null}
                     </p>
-                    <p className="text-sm text-ink-subtle">{fmt.format(m.startsAt)} · {m.location} <span className="ml-1 text-ink-muted group-open:hidden">· Redigera</span></p>
+                    <p className="text-sm text-ink-subtle">{formatMediumDateTime(m.startsAt)} · {m.location} <span className="ml-1 text-ink-muted group-open:hidden">· Redigera</span></p>
                   </summary>
                   <div className="mt-3 space-y-4">
                     <AdminForm action={updateMatch} submitLabel="Spara ändringar" className="space-y-3">

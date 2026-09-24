@@ -17,6 +17,20 @@ const monthYearFmt = new Intl.DateTimeFormat("sv-SE", {
   year: "numeric",
   timeZone: "Europe/Stockholm",
 });
+const mediumDateFmt = new Intl.DateTimeFormat("sv-SE", {
+  dateStyle: "medium",
+  timeZone: "Europe/Stockholm",
+});
+const mediumDateTimeFmt = new Intl.DateTimeFormat("sv-SE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Europe/Stockholm",
+});
+const fullDateTimeFmt = new Intl.DateTimeFormat("sv-SE", {
+  dateStyle: "full",
+  timeStyle: "short",
+  timeZone: "Europe/Stockholm",
+});
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -40,6 +54,21 @@ export function formatTime(date: Date) {
 
 export function formatMonthYear(date: Date) {
   return capitalize(monthYearFmt.format(date));
+}
+
+/** T.ex. "24 sep. 2026". Används där bara ett datum, inget klockslag, behövs. */
+export function formatMediumDate(date: Date) {
+  return mediumDateFmt.format(date);
+}
+
+/** T.ex. "24 sep. 2026 14:30". */
+export function formatMediumDateTime(date: Date) {
+  return mediumDateTimeFmt.format(date);
+}
+
+/** T.ex. "torsdag 24 september 2026 kl. 14:30". */
+export function formatFullDateTime(date: Date) {
+  return fullDateTimeFmt.format(date);
 }
 
 export function endTime(date: Date, durationMinutes = 90) {

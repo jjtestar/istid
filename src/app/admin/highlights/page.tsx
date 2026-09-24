@@ -5,11 +5,10 @@ import { HighlightFieldsSelect } from "@/components/admin/CascadingSelects";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { DEFAULT_SEASON } from "@/lib/current-user";
-import { matchShortTitle } from "@/lib/format";
+import { formatMediumDate, matchShortTitle } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
-const date = (value: Date) => new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium" }).format(value);
 
 const TYPE_LABELS: Record<string, string> = { GOAL: "Mål", SAVE: "Räddning", BLOOPER: "Blooper", OTHER: "Övrigt" };
 const ROLE_LABELS: Record<string, string> = { SCORER: "Målskytt", ASSIST: "Assist", GOALKEEPER: "Målvakt" };
@@ -41,8 +40,8 @@ export default async function AdminHighlightsPage() {
   ]);
 
   const activities = [
-    ...trainings.map((t) => ({ id: t.id, teamId: t.teamId, label: `${date(t.startsAt)} · ${t.location}`, kind: "training" as const })),
-    ...matches.map((m) => ({ id: m.id, teamId: m.teamId, label: `${date(m.startsAt)} – ${matchShortTitle(m)}`, kind: "match" as const })),
+    ...trainings.map((t) => ({ id: t.id, teamId: t.teamId, label: `${formatMediumDate(t.startsAt)} · ${t.location}`, kind: "training" as const })),
+    ...matches.map((m) => ({ id: m.id, teamId: m.teamId, label: `${formatMediumDate(m.startsAt)} – ${matchShortTitle(m)}`, kind: "match" as const })),
   ];
   const rosterPlayers = members.map((m) => ({ id: m.userId, teamId: m.teamId, label: m.user.name ?? "Namnlös spelare" }));
 
@@ -50,9 +49,9 @@ export default async function AdminHighlightsPage() {
   for (const h of highlights) {
     const key = h.trainingId ? `training:${h.trainingId}` : h.matchId ? `match:${h.matchId}` : "none";
     const label = h.training
-      ? `Träning · ${date(h.training.startsAt)} · ${h.training.location} · ${h.team.name}`
+      ? `Träning · ${formatMediumDate(h.training.startsAt)} · ${h.training.location} · ${h.team.name}`
       : h.match
-        ? `${h.match.kind === "CUP" ? "Cup" : "Match"} · ${date(h.match.startsAt)} – ${h.match.opponent} · ${h.team.name}`
+        ? `${h.match.kind === "CUP" ? "Cup" : "Match"} · ${formatMediumDate(h.match.startsAt)} – ${h.match.opponent} · ${h.team.name}`
         : "Utan koppling till match/träning";
     if (!groups.has(key)) groups.set(key, { label, items: [] });
     groups.get(key)!.items.push(h);
@@ -92,7 +91,7 @@ export default async function AdminHighlightsPage() {
                         <div className="min-w-0">
                           <a href={h.url} target="_blank" rel="noreferrer" className="block truncate font-bold underline underline-offset-4">{h.title}</a>
                           <p className="text-sm text-ink-subtle">
-                            {TYPE_LABELS[h.type] ?? h.type} · {date(h.createdAt)} · {h.author.name}
+                            {TYPE_LABELS[h.type] ?? h.type} · {formatMediumDate(h.createdAt)} · {h.author.name}
                           </p>
                           {h.players.length > 0 ? (
                             <p className="mt-0.5 text-sm text-ink-subtle">
