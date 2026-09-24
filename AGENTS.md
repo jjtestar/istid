@@ -43,6 +43,42 @@ Comments explain *why*, not *what*; keep that habit.
   directly in a page, unless the page is admin-only (those query directly by
   convention).
 
+# Agent rules — Femtekedjan
+
+## Workflow
+- Never work directly on main.
+- Use the execution workspace/branch assigned by Paperclip.
+- Push completed branches to origin and open a PR against main.
+- Never merge a PR. Board performs merges.
+- Do not make unrelated changes.
+
+## Verification
+Before completing implementation:
+- npm run lint
+- npm run typecheck
+- Run relevant project-specific tests when affected.
+
+## Architecture
+- Next.js App Router.
+- Server Components for reads.
+- Server Actions for writes.
+- Preserve Auth.js/authorization boundaries.
+- UI text is Swedish.
+- Preserve Europe/Stockholm date/time behavior.
+- Reuse existing components and patterns.
+
+## Database and production safety
+- Never access, mutate, seed or migrate the production database without explicit Board approval.
+- Never run production migrations implicitly.
+- Database/schema changes must be called out explicitly.
+- Never commit secrets or .env files.
+- Do not run `npm run build` when `DATABASE_URL` may point to production; the build/deploy flow can execute Prisma migrations.
+- Before running any command that can invoke Prisma migrations, verify that the database target is a development/test database.
+
+## Scope
+- Prefer the smallest change that satisfies the task.
+- New dependencies, routes, schema changes and infrastructure changes require explicit justification.
+
 # Access control — the one rule that is easy to break
 
 `src/proxy.ts` only checks that a session token exists. It makes **no database
