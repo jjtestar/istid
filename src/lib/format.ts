@@ -56,14 +56,17 @@ export function formatMonthYear(date: Date) {
   return capitalize(monthYearFmt.format(date));
 }
 
+/** T.ex. "24 sep. 2026". Används där bara ett datum, inget klockslag, behövs. */
 export function formatMediumDate(date: Date) {
   return mediumDateFmt.format(date);
 }
 
+/** T.ex. "24 sep. 2026 14:30". */
 export function formatMediumDateTime(date: Date) {
   return mediumDateTimeFmt.format(date);
 }
 
+/** T.ex. "torsdag 24 september 2026 kl. 14:30". */
 export function formatFullDateTime(date: Date) {
   return fullDateTimeFmt.format(date);
 }
