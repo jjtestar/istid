@@ -3,11 +3,9 @@ import { AdminHeader } from "@/components/AdminHeader";
 import { LineupEditor } from "@/components/admin/LineupEditor";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
-import { matchTitle } from "@/lib/format";
+import { formatFullDateTime, matchTitle } from "@/lib/format";
 import { LineupData } from "@/lib/lineup";
 import { prisma } from "@/lib/prisma";
-
-const fmt = new Intl.DateTimeFormat("sv-SE", { dateStyle: "full", timeStyle: "short" });
 
 export default async function AdminLineupPage({
   params,
@@ -42,7 +40,7 @@ export default async function AdminLineupPage({
         <Card className="p-5">
           <Eyebrow>{activity.team.name}</Eyebrow>
           <h2 className="mt-1 section-title">{title}</h2>
-          <p className="mt-1 text-sm text-ink-subtle">{fmt.format(activity.startsAt)}</p>
+          <p className="mt-1 text-sm text-ink-subtle">{formatFullDateTime(activity.startsAt)}</p>
         </Card>
         <Card className="p-5">
           <LineupEditor

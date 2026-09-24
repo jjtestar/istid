@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ActivityIcon, ChartIcon, ClipboardIcon, InfoIcon, PaymentIcon, ShieldIcon, TrophyIcon, UsersIcon, VideoIcon } from "@/components/icons";
 import { PageHeader } from "@/components/PageHeader";
 import { requireAdmin } from "@/lib/admin";
+import { formatMediumDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 const modules = [
@@ -44,7 +45,7 @@ export default async function AdminPage() {
             <div className="flex items-center gap-2"><ClipboardIcon className="h-5 w-5" /><h2 className="section-title">Senaste adminaktivitet</h2></div>
             <Link href="/admin/logg" className="text-sm font-bold text-signal underline underline-offset-4">Visa allt</Link>
           </div>
-          {logs.length ? <div className="mt-4 divide-y divide-divider">{logs.map((log) => <div key={log.id} className="py-3 text-sm"><p className="font-bold">{log.action}</p><p className="text-ink-subtle">{log.actor.name ?? "Administratör"} · {new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" }).format(log.createdAt)}</p></div>)}</div> : <p className="mt-3 text-sm text-ink-subtle">Ingen aktivitet registrerad ännu.</p>}
+          {logs.length ? <div className="mt-4 divide-y divide-divider">{logs.map((log) => <div key={log.id} className="py-3 text-sm"><p className="font-bold">{log.action}</p><p className="text-ink-subtle">{log.actor.name ?? "Administratör"} · {formatMediumDateTime(log.createdAt)}</p></div>)}</div> : <p className="mt-3 text-sm text-ink-subtle">Ingen aktivitet registrerad ännu.</p>}
         </section>
         {admin.isSuperAdmin ? <p className="text-center text-xs font-bold uppercase tracking-[0.1em] text-ink-subtle"><TrophyIcon className="mr-1 inline h-4 w-4" />Huvudadmin</p> : null}
       </main>

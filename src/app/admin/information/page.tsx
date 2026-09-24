@@ -4,11 +4,11 @@ import { AdminHeader } from "@/components/AdminHeader";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { DEFAULT_SEASON } from "@/lib/current-user";
+import { formatMediumDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
 const textarea = "min-h-28 w-full rounded-xl border border-divider bg-white px-3 py-2.5 text-base outline-none focus:border-ink";
-const fmt = new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" });
 
 function TeamCheckboxes({ teams, selectedTeamIds }: { teams: { id: string; name: string }[]; selectedTeamIds: Set<string> }) {
   return (
@@ -67,7 +67,7 @@ export default async function AdminInformationPage() {
                     <div className="min-w-0">
                       <p className="font-bold text-ink">{announcement.title}</p>
                       <p className="mt-1 truncate text-sm text-ink-subtle">
-                        {fmt.format(announcement.createdAt)} · {announcement.author.name ?? "Administratör"} ·{" "}
+                        {formatMediumDateTime(announcement.createdAt)} · {announcement.author.name ?? "Administratör"} ·{" "}
                         {announcement.teams.map((t) => t.name).join(", ") || "Inga lag valda"}
                       </p>
                     </div>
