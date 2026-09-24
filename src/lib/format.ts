@@ -1,7 +1,22 @@
-const weekdayFmt = new Intl.DateTimeFormat("sv-SE", { weekday: "short" });
-const dayMonthFmt = new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short" });
-const timeFmt = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit" });
-const monthYearFmt = new Intl.DateTimeFormat("sv-SE", { month: "long", year: "numeric" });
+const weekdayFmt = new Intl.DateTimeFormat("sv-SE", {
+  weekday: "short",
+  timeZone: "Europe/Stockholm",
+});
+const dayMonthFmt = new Intl.DateTimeFormat("sv-SE", {
+  day: "numeric",
+  month: "short",
+  timeZone: "Europe/Stockholm",
+});
+const timeFmt = new Intl.DateTimeFormat("sv-SE", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Stockholm",
+});
+const monthYearFmt = new Intl.DateTimeFormat("sv-SE", {
+  month: "long",
+  year: "numeric",
+  timeZone: "Europe/Stockholm",
+});
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
