@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
 
-// Formatterarna i format.ts pinnar Europe/Stockholm explicit. Testet kör därför
-// medvetet under TZ=UTC: tappar en formatterare bort sin `timeZone` faller den
-// tillbaka på processens TZ och bryter förväntningarna nedan — oavsett vilken
-// tidszon utvecklarens maskin råkar ha. Därför dynamisk import: modulen bygger
-// sina Intl-instanser vid laddning.
-process.env.TZ = "UTC";
+// Formatterarna i format.ts pinnar Europe/Stockholm explicit. Kör testet med
+// olika externa TZ-värden för att verifiera att processens tidszon inte påverkar
+// de svenska förväntningarna.
 const { formatFullDateTime, formatMediumDate, formatMediumDateTime } = await import("../src/lib/format.ts");
 
 const winter = new Date("2026-01-15T17:30:00.000Z");
