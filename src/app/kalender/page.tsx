@@ -7,16 +7,26 @@ import { DEFAULT_SEASON, getSessionUser, getUserSeasonTeams, getUserSeasons } fr
 import { endTime, formatDateHeader, formatMonthYear, formatTime, matchTitle } from "@/lib/format";
 import { RsvpQuickButton } from "@/components/RsvpQuickButton";
 import { getCalendarEventsForTeams } from "@/lib/queries";
+import { stockholmDateInput } from "@/lib/schedule";
 
+/** Stockholm-local calendar day, as a stable grouping key regardless of server timezone. */
 function dayKey(date: Date) {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  return stockholmDateInput(date);
+}
+
+/**
+ * The Stockholm-local calendar date, anchored at UTC noon so later
+ * `setUTCDate` stepping can never skip or duplicate a day across a DST
+ * transition — same technique as `weeklyOccurrences` in schedule.ts.
+ */
+function stockholmCalendarDate(date: Date) {
+  return new Date(`${stockholmDateInput(date)}T12:00:00Z`);
 }
 
 function startOfWeek(date: Date) {
-  const d = new Date(date);
-  const diff = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - diff);
-  d.setHours(0, 0, 0, 0);
+  const d = stockholmCalendarDate(date);
+  const diff = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - diff);
   return d;
 }
 
@@ -41,7 +51,7 @@ export default async function KalenderPage({
   if (teams.length === 0) {
     return (
       <div className="px-5 py-10 text-center text-ink-subtle">
-        Inget lag hittades. Kör <code>npm run db:seed</code> för att skapa exempeldata.
+        Du har inget lag just nu. Kontakta lagets administratör om det inte stämmer.
       </div>
     );
   }
@@ -53,7 +63,7 @@ export default async function KalenderPage({
   const weekStart = startOfWeek(today);
   const weekDates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
+    d.setUTCDate(d.getUTCDate() + i);
     return d;
   });
 
@@ -90,7 +100,7 @@ export default async function KalenderPage({
                     <div key={dayKey(date)} className="flex flex-col items-center gap-1.5">
                       <span className="text-[10px] font-semibold text-ink-subtle">{WEEKDAY_LABELS[index]}</span>
                       <span className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${isToday ? "bg-ink text-white" : "text-ink"}`}>
-                        {date.getDate()}
+                        {date.getUTCDate()}
                       </span>
                     </div>
                   );

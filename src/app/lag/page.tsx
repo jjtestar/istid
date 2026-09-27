@@ -17,7 +17,7 @@ export default async function LagPage() {
   if (!team) {
     return (
       <div className="px-5 py-10 text-center text-ink-subtle">
-        Inget lag hittades. Kör <code>npm run db:seed</code> för att skapa exempeldata.
+        Du har inget lag just nu. Kontakta lagets administratör om det inte stämmer.
       </div>
     );
   }

@@ -62,6 +62,11 @@ export function stockholmDateInput(date: Date) {
   return stockholmDateTimeInput(date).slice(0, 10);
 }
 
+/** Whether a calendar date (e.g. a payment due date) has passed, compared as Stockholm-local calendar days. */
+export function isPastStockholmDate(date: Date) {
+  return stockholmDateInput(date) < stockholmDateInput(new Date());
+}
+
 function isoWeekday(utcNoon: Date) {
   const day = utcNoon.getUTCDay();
   return day === 0 ? 7 : day;

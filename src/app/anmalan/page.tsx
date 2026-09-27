@@ -5,7 +5,7 @@ import { LineupView } from "@/components/LineupView";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Eyebrow } from "@/components/ui";
 import { DEFAULT_SEASON, getSessionUser, getUserSeasonTeams } from "@/lib/current-user";
-import { formatDateHeader, formatDayMonth, formatTime, matchTitle } from "@/lib/format";
+import { formatDateHeader, formatDayMonth, formatDayNumber, formatTime, matchTitle } from "@/lib/format";
 import { LineupData } from "@/lib/lineup";
 import { getActivePlayerRequests, getUpcomingActivitiesForTeams } from "@/lib/queries";
 
@@ -99,7 +99,7 @@ export default async function AnmalanPage() {
                       <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-subtle">
                         {formatDateHeader(item.startsAt).slice(0, 3)}
                       </span>
-                      <span className="text-lg font-bold leading-none text-ink">{item.startsAt.getDate()}</span>
+                      <span className="text-lg font-bold leading-none text-ink">{formatDayNumber(item.startsAt)}</span>
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
