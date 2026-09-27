@@ -15,6 +15,7 @@ import {
 } from "@/app/admin/actions";
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 import { ExpandableList } from "@/components/ExpandableList";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
@@ -150,23 +151,20 @@ function SeriesActions({
   seriesId,
   action,
   label: buttonLabel,
+  confirmText,
 }: {
   seriesId: string;
   action: typeof deleteTrainingSeries;
   label: string;
+  confirmText: string;
 }) {
   return (
     <div className="rounded-xl border border-divider bg-white/60 p-3">
       <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle">Återkommande serie</p>
       <p className="mt-1 text-sm text-ink-subtle">Tar bort alla kommande tillfällen i serien. Det som redan varit lämnas kvar.</p>
-      <AdminForm
-        action={action}
-        submitLabel={buttonLabel}
-        className="mt-2"
-        submitClassName="h-10 w-full rounded-xl border border-signal text-sm font-bold text-signal"
-      >
-        <input type="hidden" name="seriesId" value={seriesId} />
-      </AdminForm>
+      <div className="mt-2">
+        <DeleteButton action={action} idField="seriesId" idValue={seriesId} label={buttonLabel} confirmText={confirmText} />
+      </div>
     </div>
   );
 }
@@ -302,21 +300,28 @@ export default async function AdminActivitiesPage() {
                     <p className="text-sm text-ink-subtle">{formatMediumDateTime(t.startsAt)} · {t.location} <span className="ml-1 text-ink-muted group-open:hidden">· Redigera</span></p>
                   </summary>
                   <div className="mt-3 space-y-4">
-                    <AdminForm action={updateTraining} submitLabel="Spara ändringar" className="space-y-3">
-                      <input type="hidden" name="trainingId" value={t.id} />
-                      <input name="startsAt" type="datetime-local" required defaultValue={stockholmDateTimeInput(t.startsAt)} className={field} />
-                      <input name="location" required defaultValue={t.location} placeholder="Plats" className={field} />
-                      <input name="notes" defaultValue={t.notes ?? ""} placeholder="Anteckning (valfritt)" className={field} />
-                    </AdminForm>
-                    <AdminForm
-                      action={deleteTraining}
-                      submitLabel="Ta bort träning"
-                      submitClassName="h-10 w-full rounded-xl border border-signal text-sm font-bold text-signal"
-                    >
-                      <input type="hidden" name="trainingId" value={t.id} />
-                    </AdminForm>
+                    {t.team.season === DEFAULT_SEASON && !t.team.archivedAt ? (
+                      <>
+                        <AdminForm action={updateTraining} submitLabel="Spara ändringar" className="space-y-3">
+                          <input type="hidden" name="trainingId" value={t.id} />
+                          <input name="startsAt" type="datetime-local" required defaultValue={stockholmDateTimeInput(t.startsAt)} className={field} />
+                          <input name="location" required defaultValue={t.location} placeholder="Plats" className={field} />
+                          <input name="notes" defaultValue={t.notes ?? ""} placeholder="Anteckning (valfritt)" className={field} />
+                        </AdminForm>
+                        <DeleteButton action={deleteTraining} idField="trainingId" idValue={t.id} label="Ta bort träning" confirmText="Träningen och all närvaro/statistik kopplad till den försvinner permanent." />
+                      </>
+                    ) : (
+                      <p className="rounded-xl border border-divider bg-white/60 p-3 text-sm text-ink-subtle">
+                        Historik – går inte att ändra eller ta bort.
+                      </p>
+                    )}
                     {t.seriesId ? (
-                      <SeriesActions seriesId={t.seriesId} action={deleteTrainingSeries} label="Ta bort hela serien" />
+                      <SeriesActions
+                        seriesId={t.seriesId}
+                        action={deleteTrainingSeries}
+                        label="Ta bort hela serien"
+                        confirmText="Alla kommande träningar i serien tas bort. Det som redan varit lämnas kvar."
+                      />
                     ) : null}
                     <PlayerRequestSection activity={t} activityRef={`training:${t.id}`} />
                     <Link href={`/admin/lagindelning/training/${t.id}`} className="block h-10 rounded-xl border border-divider text-center text-sm font-bold leading-10 text-ink">
@@ -346,50 +351,63 @@ export default async function AdminActivitiesPage() {
                     <p className="text-sm text-ink-subtle">{formatMediumDateTime(m.startsAt)} · {m.location} <span className="ml-1 text-ink-muted group-open:hidden">· Redigera</span></p>
                   </summary>
                   <div className="mt-3 space-y-4">
-                    <AdminForm action={updateMatch} submitLabel="Spara ändringar" className="space-y-3">
-                      <input type="hidden" name="matchId" value={m.id} />
-                      <label className="block">
-                        <span className={label}>Typ</span>
-                        <select name="kind" defaultValue={m.kind} className={`${field} mt-1`}>
-                          <option value="MATCH">Match</option>
-                          <option value="CUP">Cup</option>
-                        </select>
-                      </label>
-                      <label className="block">
-                        <span className={label}>Startar</span>
-                        <input name="startsAt" type="datetime-local" required defaultValue={stockholmDateTimeInput(m.startsAt)} className={`${field} mt-1`} />
-                      </label>
-                      <label className="block">
-                        <span className={label}>Slutar (valfritt)</span>
-                        <input name="endsAt" type="datetime-local" defaultValue={m.endsAt ? stockholmDateTimeInput(m.endsAt) : ""} className={`${field} mt-1`} />
-                      </label>
-                      <input name="opponent" required defaultValue={m.opponent} placeholder="Motståndare, eller cupens namn" className={field} />
-                      <input name="location" required defaultValue={m.location} placeholder="Plats" className={field} />
-                      <select name="isHome" defaultValue={String(m.isHome)} className={field}>
-                        <option value="true">Hemma</option>
-                        <option value="false">Borta</option>
-                      </select>
-                      <div className="grid grid-cols-2 gap-2">
-                        <label className="text-xs font-bold">
-                          Hemmalagets mål
-                          <input name="homeScore" type="number" min="0" max="99" defaultValue={m.homeScore ?? ""} placeholder="–" className={`${field} mt-1`} />
-                        </label>
-                        <label className="text-xs font-bold">
-                          Bortalagets mål
-                          <input name="awayScore" type="number" min="0" max="99" defaultValue={m.awayScore ?? ""} placeholder="–" className={`${field} mt-1`} />
-                        </label>
-                      </div>
-                      <p className="text-xs text-ink-subtle">Lämna tomt om resultatet inte är klart.</p>
-                    </AdminForm>
-                    <AdminForm
-                      action={deleteMatch}
-                      submitLabel={`Ta bort ${m.kind === "CUP" ? "cup" : "match"}`}
-                      submitClassName="h-10 w-full rounded-xl border border-signal text-sm font-bold text-signal"
-                    >
-                      <input type="hidden" name="matchId" value={m.id} />
-                    </AdminForm>
+                    {m.team.season === DEFAULT_SEASON && !m.team.archivedAt ? (
+                      <>
+                        <AdminForm action={updateMatch} submitLabel="Spara ändringar" className="space-y-3">
+                          <input type="hidden" name="matchId" value={m.id} />
+                          <label className="block">
+                            <span className={label}>Typ</span>
+                            <select name="kind" defaultValue={m.kind} className={`${field} mt-1`}>
+                              <option value="MATCH">Match</option>
+                              <option value="CUP">Cup</option>
+                            </select>
+                          </label>
+                          <label className="block">
+                            <span className={label}>Startar</span>
+                            <input name="startsAt" type="datetime-local" required defaultValue={stockholmDateTimeInput(m.startsAt)} className={`${field} mt-1`} />
+                          </label>
+                          <label className="block">
+                            <span className={label}>Slutar (valfritt)</span>
+                            <input name="endsAt" type="datetime-local" defaultValue={m.endsAt ? stockholmDateTimeInput(m.endsAt) : ""} className={`${field} mt-1`} />
+                          </label>
+                          <input name="opponent" required defaultValue={m.opponent} placeholder="Motståndare, eller cupens namn" className={field} />
+                          <input name="location" required defaultValue={m.location} placeholder="Plats" className={field} />
+                          <select name="isHome" defaultValue={String(m.isHome)} className={field}>
+                            <option value="true">Hemma</option>
+                            <option value="false">Borta</option>
+                          </select>
+                          <div className="grid grid-cols-2 gap-2">
+                            <label className="text-xs font-bold">
+                              Hemmalagets mål
+                              <input name="homeScore" type="number" min="0" max="99" defaultValue={m.homeScore ?? ""} placeholder="–" className={`${field} mt-1`} />
+                            </label>
+                            <label className="text-xs font-bold">
+                              Bortalagets mål
+                              <input name="awayScore" type="number" min="0" max="99" defaultValue={m.awayScore ?? ""} placeholder="–" className={`${field} mt-1`} />
+                            </label>
+                          </div>
+                          <p className="text-xs text-ink-subtle">Lämna tomt om resultatet inte är klart.</p>
+                        </AdminForm>
+                        <DeleteButton
+                          action={deleteMatch}
+                          idField="matchId"
+                          idValue={m.id}
+                          label={`Ta bort ${m.kind === "CUP" ? "cup" : "match"}`}
+                          confirmText={`${m.kind === "CUP" ? "Cupen" : "Matchen"} och all statistik/RSVP kopplad till den försvinner permanent.`}
+                        />
+                      </>
+                    ) : (
+                      <p className="rounded-xl border border-divider bg-white/60 p-3 text-sm text-ink-subtle">
+                        Historik – går inte att ändra eller ta bort.
+                      </p>
+                    )}
                     {m.seriesId ? (
-                      <SeriesActions seriesId={m.seriesId} action={deleteMatchSeries} label="Ta bort hela serien" />
+                      <SeriesActions
+                        seriesId={m.seriesId}
+                        action={deleteMatchSeries}
+                        label="Ta bort hela serien"
+                        confirmText="Alla kommande matcher/cuper i serien tas bort. Det som redan varit lämnas kvar."
+                      />
                     ) : null}
                     <PlayerRequestSection activity={m} activityRef={`match:${m.id}`} />
                     <Link href={`/admin/lagindelning/match/${m.id}`} className="block h-10 rounded-xl border border-divider text-center text-sm font-bold leading-10 text-ink">

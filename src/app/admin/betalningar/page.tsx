@@ -2,11 +2,13 @@ import { createPayment, deletePayment, setPaymentStatus, updatePayment } from "@
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
 import { TeamPlayerSelect } from "@/components/admin/CascadingSelects";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 import { TeamFilterSelect } from "@/components/TeamFilterSelect";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { formatMediumDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { isPastStockholmDate } from "@/lib/schedule";
 
 const field = "h-11 w-full rounded-xl border border-divider bg-white px-3 text-base outline-none focus:border-ink";
 const money = (ore: number) => new Intl.NumberFormat("sv-SE", { style: "currency", currency: "SEK", maximumFractionDigits: 2 }).format(ore / 100);
@@ -73,7 +75,9 @@ export default async function AdminPaymentsPage({
             <p className="mt-1 text-sm text-ink-subtle">{unpaid.length} obetalda · {money(unpaidTotal)} totalt obetalt</p>
           </div>
           <div className="divide-y divide-divider">
-            {payments.length ? payments.map((p) => (
+            {payments.length ? payments.map((p) => {
+              const overdue = !p.paidAt && isPastStockholmDate(p.dueDate);
+              return (
               <details key={p.id} className="group p-4">
                 <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3">
                   <div>
@@ -82,7 +86,7 @@ export default async function AdminPaymentsPage({
                     {p.note ? <p className="mt-1 text-xs text-ink-subtle">{p.note}</p> : null}
                   </div>
                   <span className={`rounded-full px-3 py-2 text-xs font-bold ${p.paidAt ? "bg-rink-crease text-success" : "bg-rink-line-red text-signal"}`}>
-                    {p.paidAt ? "Betald" : "Obetald"}
+                    {p.paidAt ? "Betald" : overdue ? "Försenad" : "Obetald"}
                   </span>
                 </summary>
                 <div className="mt-3 space-y-3">
@@ -100,12 +104,17 @@ export default async function AdminPaymentsPage({
                     <input name="dueDate" required type="date" defaultValue={dateInput(p.dueDate)} className={field} />
                     <input name="note" defaultValue={p.note ?? ""} placeholder="Kommentar (valfritt)" className={field} />
                   </AdminForm>
-                  <AdminForm action={deletePayment} submitLabel="Ta bort betalning" submitClassName="h-10 w-full rounded-xl border border-signal text-sm font-bold text-signal">
-                    <input type="hidden" name="paymentId" value={p.id} />
-                  </AdminForm>
+                  <DeleteButton
+                    action={deletePayment}
+                    idField="paymentId"
+                    idValue={p.id}
+                    label="Ta bort betalning"
+                    confirmText={`Betalningen "${p.title}" tas bort permanent.`}
+                  />
                 </div>
               </details>
-            )) : <p className="p-5 text-sm text-ink-subtle">Inga betalningar registrerade.</p>}
+              );
+            }) : <p className="p-5 text-sm text-ink-subtle">Inga betalningar registrerade.</p>}
           </div>
         </Card>
       </main>
