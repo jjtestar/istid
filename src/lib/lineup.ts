@@ -34,11 +34,20 @@ function isSlotGrid(grid: unknown, rows: number, cols: number, rosterIds: Set<st
 export function isValidLineupData(data: unknown, rosterIds: Set<string>): data is LineupData {
   if (!data || typeof data !== "object") return false;
   const d = data as Record<string, unknown>;
-  return (
+  const valid =
     isSlotGrid(d.forwardLines, FORWARD_LINES, FORWARD_SLOTS, rosterIds) &&
     isSlotGrid(d.defensePairs, DEFENSE_PAIRS, DEFENSE_SLOTS, rosterIds) &&
     Array.isArray(d.goalies) &&
     d.goalies.length === GOALIE_SLOTS &&
-    d.goalies.every((g) => g === null || (typeof g === "string" && rosterIds.has(g)))
-  );
+    d.goalies.every((g) => g === null || (typeof g === "string" && rosterIds.has(g)));
+  if (!valid) return false;
+
+  // A player can only occupy one slot — a duplicate would silently leave
+  // another slot empty while the lineup still looks complete.
+  const placed = [
+    ...(d.forwardLines as (string | null)[][]).flat(),
+    ...(d.defensePairs as (string | null)[][]).flat(),
+    ...(d.goalies as (string | null)[]),
+  ].filter((id): id is string => id !== null);
+  return placed.length === new Set(placed).size;
 }

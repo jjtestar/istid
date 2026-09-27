@@ -28,11 +28,26 @@ jobs:
 
       - run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       # `next typegen` first: route types like LayoutProps<"/"> are generated
       # into .next/types, so a bare `tsc --noEmit` would fail on a fresh
       # checkout. Runs before the build so a type error fails fast.
       - name: Typecheck
         run: npm run typecheck
+
+      # Database-free regression scripts for the DST/date-format and PWA/proxy
+      # contracts — cheap enough to run on every PR instead of relying on
+      # everyone remembering to run them locally.
+      - name: Schedule tests
+        run: npm run test:schedule
+
+      - name: PWA tests
+        run: npm run test:pwa
+
+      - name: Format tests
+        run: npm run test:format
 
       - run: npx next build
 

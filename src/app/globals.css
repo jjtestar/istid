@@ -52,11 +52,15 @@
   --border-subtle: #253234;
   --text: #e8f3f1;
   --text-secondary: #8d9f9e;
-  --text-muted: #617171;
+  /* Lightened from #617171 — that value was 3.19:1 on --surface and 3.64:1 on
+     --bg, both under WCAG AA's 4.5:1 for normal text. */
+  --text-muted: #778c8c;
   --accent: #a1e6d4;
   --accent-strong: #54c7b3;
   --accent-muted: #6f9e98;
-  --warm: #c9a979;
+  /* Lightened from #c9a979 — that value was 3.78:1 against --rink-line-red,
+     the background it renders on as the "obetald"/error text color. */
+  --warm: #d9bd91;
   --radius-card: 36px;
   --radius-control: 18px;
   --veil: rgb(10 17 19 / 88%);

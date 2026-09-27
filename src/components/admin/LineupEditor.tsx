@@ -11,14 +11,22 @@ function PlayerSelect({
   onChange,
   roster,
   label,
+  duplicate,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
   roster: { id: string; name: string; jerseyNo: number | null }[];
   label: string;
+  duplicate: boolean;
 }) {
   return (
-    <select aria-label={label} value={value ?? ""} onChange={(e) => onChange(e.target.value || null)} className={selectClass}>
+    <select
+      aria-label={label}
+      aria-invalid={duplicate}
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value || null)}
+      className={`${selectClass} ${duplicate ? "border-signal bg-rink-line-red/40" : ""}`}
+    >
       <option value="">– tom –</option>
       {roster.map((p) => (
         <option key={p.id} value={p.id}>
@@ -27,6 +35,20 @@ function PlayerSelect({
       ))}
     </select>
   );
+}
+
+/** Ids placed in more than one slot — a lineup can't be saved with a duplicate. */
+function duplicatePlayerIds(lineup: LineupData) {
+  const placed = [...lineup.forwardLines.flat(), ...lineup.defensePairs.flat(), ...lineup.goalies].filter(
+    (id): id is string => id !== null,
+  );
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const id of placed) {
+    if (seen.has(id)) duplicates.add(id);
+    seen.add(id);
+  }
+  return duplicates;
 }
 
 export function LineupEditor({
@@ -41,6 +63,8 @@ export function LineupEditor({
   const [lineup, setLineup] = useState<LineupData>(initialData ?? emptyLineup());
   const [state, formAction, pending] = useActionState(saveLineupPlan, undefined);
   const dataInputRef = useRef<HTMLInputElement>(null);
+  const duplicateIds = duplicatePlayerIds(lineup);
+  const hasDuplicates = duplicateIds.size > 0;
 
   useEffect(() => {
     if (dataInputRef.current) dataInputRef.current.value = JSON.stringify(lineup);
@@ -80,6 +104,7 @@ export function LineupEditor({
                   value={lineup.forwardLines[lineIndex][slotIndex]}
                   onChange={(v) => setForward(lineIndex, slotIndex, v)}
                   roster={roster}
+                  duplicate={Boolean(lineup.forwardLines[lineIndex][slotIndex] && duplicateIds.has(lineup.forwardLines[lineIndex][slotIndex]!))}
                 />
               ))}
             </div>
@@ -100,6 +125,7 @@ export function LineupEditor({
                   value={lineup.defensePairs[pairIndex][slotIndex]}
                   onChange={(v) => setDefense(pairIndex, slotIndex, v)}
                   roster={roster}
+                  duplicate={Boolean(lineup.defensePairs[pairIndex][slotIndex] && duplicateIds.has(lineup.defensePairs[pairIndex][slotIndex]!))}
                 />
               ))}
             </div>
@@ -111,14 +137,26 @@ export function LineupEditor({
         <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle">Målvakter</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {Array.from({ length: GOALIE_SLOTS }, (_, index) => (
-            <PlayerSelect key={index} label={`Målvakt ${index + 1}`} value={lineup.goalies[index]} onChange={(v) => setGoalie(index, v)} roster={roster} />
+            <PlayerSelect
+              key={index}
+              label={`Målvakt ${index + 1}`}
+              value={lineup.goalies[index]}
+              onChange={(v) => setGoalie(index, v)}
+              roster={roster}
+              duplicate={Boolean(lineup.goalies[index] && duplicateIds.has(lineup.goalies[index]!))}
+            />
           ))}
         </div>
       </div>
 
+      {hasDuplicates ? (
+        <p role="alert" className="rounded-xl bg-rink-line-red px-3 py-2.5 text-sm font-semibold text-signal">
+          En spelare kan bara stå på en plats. Ta bort dubbletten markerad i rött ovan.
+        </p>
+      ) : null}
       {state?.error ? <p role="alert" className="rounded-xl bg-rink-line-red px-3 py-2.5 text-sm font-semibold text-signal">{state.error}</p> : null}
       {state?.success ? <p role="status" className="rounded-xl bg-rink-crease px-3 py-2.5 text-sm font-semibold text-success">{state.success}</p> : null}
-      <button type="submit" disabled={pending} className="h-11 w-full rounded-xl bg-ink font-bold text-white disabled:opacity-60">
+      <button type="submit" disabled={pending || hasDuplicates} className="h-11 w-full rounded-xl bg-ink font-bold text-white disabled:opacity-60">
         {pending ? "Sparar…" : "Spara lagindelning"}
       </button>
     </form>
