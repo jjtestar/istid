@@ -31,6 +31,10 @@ const fullDateTimeFmt = new Intl.DateTimeFormat("sv-SE", {
   timeStyle: "short",
   timeZone: "Europe/Stockholm",
 });
+const dayNumberFmt = new Intl.DateTimeFormat("sv-SE", {
+  day: "numeric",
+  timeZone: "Europe/Stockholm",
+});
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -46,6 +50,11 @@ export function formatDayMonth(date: Date) {
 
 export function formatDateHeader(date: Date) {
   return `${formatWeekday(date)} ${formatDayMonth(date)}`;
+}
+
+/** Day-of-month in Stockholm local time — pairs with `formatDateHeader` so the two never disagree near midnight. */
+export function formatDayNumber(date: Date) {
+  return dayNumberFmt.format(date);
 }
 
 export function formatTime(date: Date) {

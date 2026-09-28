@@ -24,7 +24,7 @@ export function TeamPlayerSelect({
       <select aria-label="Lag" value={teamId} onChange={(e) => setTeamId(e.target.value)} className={field}>
         {teams.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
       </select>
-      <select name={name} required className={field}>
+      <select aria-label="Spelare" name={name} required className={field}>
         {filtered.length === 0
           ? <option value="">Inga spelare i valt lag</option>
           : filtered.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
@@ -58,7 +58,7 @@ export function TeamOptionalActivitySelect({
       <select aria-label="Lag" name={teamFieldName} value={teamId} onChange={(e) => setTeamId(e.target.value)} className={field}>
         {teams.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
       </select>
-      <select name={name} className={field} defaultValue="">
+      <select aria-label="Aktivitet" name={name} className={field} defaultValue="">
         <option value="">Ingen specifik aktivitet</option>
         {filtered.map((a) => (
           <option key={`${a.kind}:${a.id}`} value={`${a.kind}:${a.id}`}>
@@ -124,7 +124,7 @@ export function HighlightFieldsSelect({
       <select aria-label="Typ av klipp" name="type" value={type} onChange={(e) => setType(e.target.value as typeof type)} className={field}>
         {HIGHLIGHT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
       </select>
-      <select name="activity" className={`${field} lg:col-span-2`} defaultValue="">
+      <select aria-label="Aktivitet" name="activity" className={`${field} lg:col-span-2`} defaultValue="">
         <option value="">Ingen specifik aktivitet</option>
         {filteredActivities.map((a) => (
           <option key={`${a.kind}:${a.id}`} value={`${a.kind}:${a.id}`}>
@@ -171,12 +171,12 @@ export function TeamActivityPlayerSelect({
       <select aria-label="Lag" value={teamId} onChange={(e) => setTeamId(e.target.value)} className={field}>
         {teams.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
       </select>
-      <select name={activityName} required className={field}>
+      <select aria-label={activityLabel} name={activityName} required className={field}>
         {filteredActivities.length === 0
           ? <option value="">{`Inga ${activityLabel} i valt lag`}</option>
           : filteredActivities.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
       </select>
-      <select name={playerName} required className={field}>
+      <select aria-label="Spelare" name={playerName} required className={field}>
         {filteredPlayers.length === 0
           ? <option value="">Inga spelare i valt lag</option>
           : filteredPlayers.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}

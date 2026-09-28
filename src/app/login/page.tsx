@@ -60,6 +60,12 @@ export default async function LoginPage() {
             Skapa konto
           </Link>
         </p>
+        <p className="mt-2 text-center text-sm text-ink-muted">
+          Glömt lösenordet?{" "}
+          <Link href="/aterstall-losenord" className="font-bold text-ink underline underline-offset-4">
+            Återställ det
+          </Link>
+        </p>
         <div className="mt-4 flex justify-center"><InstallAppButton /></div>
       </div>
     </main>

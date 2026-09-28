@@ -1,6 +1,7 @@
 import { createAnnouncement, deleteAnnouncement, updateAnnouncement } from "@/app/admin/actions";
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { DEFAULT_SEASON } from "@/lib/current-user";
@@ -83,13 +84,13 @@ export default async function AdminInformationPage() {
                         <TeamCheckboxes teams={teams} selectedTeamIds={new Set(announcement.teams.map((t) => t.id))} />
                       </div>
                     </AdminForm>
-                    <AdminForm
+                    <DeleteButton
                       action={deleteAnnouncement}
-                      submitLabel="Ta bort"
-                      submitClassName="h-10 w-full rounded-xl border border-signal text-sm font-bold text-signal"
-                    >
-                      <input type="hidden" name="announcementId" value={announcement.id} />
-                    </AdminForm>
+                      idField="announcementId"
+                      idValue={announcement.id}
+                      label="Ta bort"
+                      confirmText={`Informationen "${announcement.title}" tas bort permanent för alla lag den skickades till.`}
+                    />
                   </div>
                 </details>
               ))}

@@ -2,6 +2,7 @@ import { createHighlight, deleteHighlight } from "@/app/admin/actions";
 import { AdminForm } from "@/components/AdminForm";
 import { AdminHeader } from "@/components/AdminHeader";
 import { HighlightFieldsSelect } from "@/components/admin/CascadingSelects";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 import { Card, Eyebrow } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { DEFAULT_SEASON } from "@/lib/current-user";
@@ -16,13 +17,13 @@ const ROLE_LABELS: Record<string, string> = { SCORER: "Målskytt", ASSIST: "Assi
 export default async function AdminHighlightsPage() {
   await requireAdmin();
   const [teams, trainings, matches, members, highlights] = await Promise.all([
-    // Highlights can only be added for the current season or a season that hasn't
-    // started yet — older seasons are historical data and shouldn't receive new content.
-    prisma.team.findMany({ where: { archivedAt: null, season: { gte: DEFAULT_SEASON } }, orderBy: [{ season: "asc" }, { name: "asc" }] }),
+    // Only current-season, non-archived teams can get new highlights — older
+    // seasons are historical data and shouldn't receive new content.
+    prisma.team.findMany({ where: { archivedAt: null, season: DEFAULT_SEASON }, orderBy: { name: "asc" } }),
     prisma.training.findMany({ orderBy: { startsAt: "desc" }, take: 60, select: { id: true, teamId: true, startsAt: true, location: true } }),
     prisma.match.findMany({ orderBy: { startsAt: "desc" }, take: 60, select: { id: true, teamId: true, startsAt: true, opponent: true, kind: true } }),
     prisma.teamMember.findMany({
-      where: { team: { archivedAt: null, season: { gte: DEFAULT_SEASON } } },
+      where: { team: { archivedAt: null, season: DEFAULT_SEASON } },
       orderBy: { user: { name: "asc" } },
       select: { userId: true, teamId: true, user: { select: { name: true } } },
     }),
@@ -65,7 +66,7 @@ export default async function AdminHighlightsPage() {
           <Eyebrow>Nytt klipp</Eyebrow>
           <h2 className="mt-1 section-title">Lägg till highlight</h2>
           {teams.length === 0 ? (
-            <p className="mt-3 text-sm text-ink-subtle">Inga lag för säsongen {DEFAULT_SEASON} eller senare hittades.</p>
+            <p className="mt-3 text-sm text-ink-subtle">Inga lag för säsongen {DEFAULT_SEASON} hittades.</p>
           ) : (
             <AdminForm action={createHighlight} submitLabel="Lägg till highlight" className="mt-4 grid gap-3 lg:grid-cols-2" submitClassName="h-11 rounded-xl bg-ink font-bold text-white disabled:opacity-60 lg:col-span-2">
               <input name="title" required maxLength={120} placeholder="Rubrik, exempelvis Mål 2–1" className={field} />
@@ -99,9 +100,9 @@ export default async function AdminHighlightsPage() {
                             </p>
                           ) : null}
                         </div>
-                        <AdminForm action={deleteHighlight} submitLabel="Ta bort" submitClassName="rounded-xl border border-divider px-3 py-2 text-xs font-bold text-signal">
-                          <input type="hidden" name="highlightId" value={h.id} />
-                        </AdminForm>
+                        <div className="shrink-0">
+                          <DeleteButton action={deleteHighlight} idField="highlightId" idValue={h.id} label="Ta bort" confirmText={`Klippet "${h.title}" tas bort permanent.`} />
+                        </div>
                       </div>
                     ))}
                   </div>

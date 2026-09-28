@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { InstallAppButton } from "@/components/PwaProvider";
 import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUserWithTeam } from "@/lib/current-user";
-import { formatDateHeader, formatTime, matchTitle } from "@/lib/format";
+import { formatDateHeader, formatDayNumber, formatTime, matchTitle } from "@/lib/format";
 import { getAnnouncementsForTeam, getCalendarEvents, getGroupedTeamHighlights } from "@/lib/queries";
 
 const HIGHLIGHT_TYPE_LABELS: Record<string, string> = { GOAL: "Mål", SAVE: "Räddning", BLOOPER: "Blooper", OTHER: "Övrigt" };
@@ -15,7 +15,7 @@ export default async function Home() {
   if (!team) {
     return (
       <div className="px-5 py-10 text-center text-ink-subtle">
-        Inget lag hittades. Kör <code>npm run db:seed</code> för att skapa exempeldata.
+        Du har inget lag just nu. Kontakta lagets administratör om det inte stämmer.
       </div>
     );
   }
@@ -110,7 +110,7 @@ export default async function Home() {
                   <span className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-75">
                     {formatDateHeader(latest.item.startsAt).slice(0, 3)}
                   </span>
-                  <span className="text-xl font-bold leading-none">{latest.item.startsAt.getDate()}</span>
+                  <span className="text-xl font-bold leading-none">{formatDayNumber(latest.item.startsAt)}</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-lg font-bold text-ink">

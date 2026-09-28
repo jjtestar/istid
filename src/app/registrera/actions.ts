@@ -6,44 +6,18 @@ import bcrypt from "bcryptjs";
 import { signIn } from "@/lib/auth";
 import { normalizeEmail, normalizePin, secureHash } from "@/lib/invite-security";
 import { prisma } from "@/lib/prisma";
+import { isRateLimited, recordAttemptFailure } from "@/lib/rate-limit";
+import { isMutableTeam } from "@/lib/team-guard";
 
 export type RegistrationState = {
   error?: string;
   fieldErrors?: Partial<Record<"name" | "email" | "password" | "pin" | "age", string>>;
 } | undefined;
 
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
-
 async function attemptKey(email: string) {
   const requestHeaders = await headers();
   const forwarded = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   return secureHash(`${email}:${forwarded}`, "registration-attempt");
-}
-
-async function isBlocked(keyHash: string, now: Date) {
-  const attempt = await prisma.registrationAttempt.findUnique({ where: { keyHash } });
-  return Boolean(attempt?.blockedUntil && attempt.blockedUntil > now);
-}
-
-async function recordFailure(keyHash: string, now: Date) {
-  const current = await prisma.registrationAttempt.findUnique({ where: { keyHash } });
-  const freshWindow = !current || now.getTime() - current.windowStartedAt.getTime() >= WINDOW_MS;
-  const attempts = freshWindow ? 1 : current.attempts + 1;
-  await prisma.registrationAttempt.upsert({
-    where: { keyHash },
-    create: {
-      keyHash,
-      attempts,
-      windowStartedAt: now,
-      blockedUntil: attempts >= MAX_ATTEMPTS ? new Date(now.getTime() + WINDOW_MS) : null,
-    },
-    update: {
-      attempts,
-      windowStartedAt: freshWindow ? now : current!.windowStartedAt,
-      blockedUntil: attempts >= MAX_ATTEMPTS ? new Date(now.getTime() + WINDOW_MS) : null,
-    },
-  });
 }
 
 export async function registerUser(
@@ -68,7 +42,7 @@ export async function registerUser(
 
   const now = new Date();
   const keyHash = await attemptKey(email);
-  if (await isBlocked(keyHash, now)) {
+  if (await isRateLimited(keyHash)) {
     return { error: "För många försök. Vänta 15 minuter och försök igen." };
   }
 
@@ -82,7 +56,7 @@ export async function registerUser(
     invite.expiresAt > now;
 
   if (!validInvite) {
-    await recordFailure(keyHash, now);
+    await recordAttemptFailure(keyHash);
     return { error: "PIN-koden är ogiltig, förbrukad eller har gått ut." };
   }
 
@@ -100,6 +74,12 @@ export async function registerUser(
       });
       if (claimed.count !== 1) throw new Error("INVITE_ALREADY_USED");
 
+      // The team may have been archived or rolled to a new season during the
+      // invite's 14-day validity window — re-check right before creating the
+      // membership rather than trusting the state at invite-creation time.
+      const team = await tx.team.findUnique({ where: { id: invite.teamId }, select: { season: true, archivedAt: true } });
+      if (!team || !isMutableTeam(team)) throw new Error("TEAM_NOT_MUTABLE");
+
       const user = await tx.user.create({
         data: { name, email, passwordHash, role: "PLAYER", isActive: true, accessApproved: true },
       });
@@ -113,6 +93,9 @@ export async function registerUser(
     }
     if (error instanceof Error && error.message === "INVITE_ALREADY_USED") {
       return { error: "PIN-koden har redan använts." };
+    }
+    if (error instanceof Error && error.message === "TEAM_NOT_MUTABLE") {
+      return { error: "Laget som bjöd in dig är inte längre aktivt. Kontakta din admin för en ny inbjudan." };
     }
     throw error;
   }

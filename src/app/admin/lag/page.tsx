@@ -127,11 +127,14 @@ export default async function AdminTeamsPage() {
                 <details className="mt-3 group">
                   <summary className="cursor-pointer text-sm font-bold text-signal group-open:hidden">Redigera lag</summary>
                   <div className="mt-3 space-y-3">
-                    <AdminForm action={updateTeam} submitLabel="Spara ändringar" className="grid gap-2 sm:grid-cols-[1fr_8rem]" submitClassName="h-10 rounded-xl bg-ink text-sm font-bold text-white disabled:opacity-60 sm:col-span-2">
-                      <input type="hidden" name="teamId" value={team.id} />
-                      <input name="name" required defaultValue={team.name} placeholder="Lagnamn" className={field} />
-                      <input name="season" required pattern="\d{4}/\d{2}" defaultValue={team.season} className={field} />
-                    </AdminForm>
+                    {team.season === DEFAULT_SEASON && !team.archivedAt ? (
+                      <AdminForm action={updateTeam} submitLabel="Spara ändringar" className="grid gap-2" submitClassName="h-10 rounded-xl bg-ink text-sm font-bold text-white disabled:opacity-60">
+                        <input type="hidden" name="teamId" value={team.id} />
+                        <input name="name" required defaultValue={team.name} placeholder="Lagnamn" className={field} />
+                      </AdminForm>
+                    ) : (
+                      <p className="text-sm text-ink-subtle">Historik – går inte att ändra namnet här.</p>
+                    )}
                     {team.archivedAt ? (
                       <AdminForm action={unarchiveTeam} submitLabel="Återställ lag" submitClassName="h-10 w-full rounded-xl border border-divider text-sm font-bold text-ink">
                         <input type="hidden" name="teamId" value={team.id} />

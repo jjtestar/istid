@@ -4,6 +4,7 @@ import { Card, Eyebrow } from "@/components/ui";
 import { getCurrentUser } from "@/lib/current-user";
 import { formatMediumDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { isPastStockholmDate } from "@/lib/schedule";
 
 const money = (ore: number) => new Intl.NumberFormat("sv-SE", { style: "currency", currency: "SEK", maximumFractionDigits: 2 }).format(ore / 100);
 
@@ -62,21 +63,26 @@ export default async function PaymentsPage({
 
         <Card className="overflow-hidden">
           <div className="divide-y divide-divider">
-            {payments.length ? payments.map((p) => (
-              <div key={p.id} className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-bold">{p.title}</p>
-                    <p className="text-sm text-ink-subtle">{teams.length > 1 ? `${p.team.name} · ` : ""}förfaller {formatMediumDate(p.dueDate)}</p>
+            {payments.length ? payments.map((p) => {
+              const overdue = !p.paidAt && isPastStockholmDate(p.dueDate);
+              return (
+                <div key={p.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-bold">{p.title}</p>
+                      <p className="text-sm text-ink-subtle">{teams.length > 1 ? `${p.team.name} · ` : ""}förfaller {formatMediumDate(p.dueDate)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">{money(p.amountOre)}</p>
+                      <p className={`text-xs font-bold ${p.paidAt ? "text-success" : "text-signal"}`}>
+                        {p.paidAt ? `Betald ${formatMediumDate(p.paidAt)}` : overdue ? "Försenad" : "Obetald"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold">{money(p.amountOre)}</p>
-                    <p className={`text-xs font-bold ${p.paidAt ? "text-success" : "text-signal"}`}>{p.paidAt ? `Betald ${formatMediumDate(p.paidAt)}` : "Obetald"}</p>
-                  </div>
+                  {p.note ? <p className="mt-2 text-sm text-ink-subtle">{p.note}</p> : null}
                 </div>
-                {p.note ? <p className="mt-2 text-sm text-ink-subtle">{p.note}</p> : null}
-              </div>
-            )) : <p className="p-5 text-sm text-ink-subtle">Du har inga registrerade betalningar{teamFilter ? " för valt lag" : ""}.</p>}
+              );
+            }) : <p className="p-5 text-sm text-ink-subtle">Du har inga registrerade betalningar{teamFilter ? " för valt lag" : ""}.</p>}
           </div>
         </Card>
       </main>
