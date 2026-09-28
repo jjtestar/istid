@@ -86,7 +86,9 @@ export default async function AnmalanPage() {
                   absenceReason: playerRegistration?.absenceReason ?? null,
                 };
               });
-              const namesById = new Map(roster.map((member) => [member.userId, member.user.name ?? "Okänd spelare"]));
+              const playersById = new Map(
+                roster.map((member) => [member.userId, { name: member.user.name ?? "Okänd spelare", jerseyNo: member.jerseyNo }]),
+              );
               const lineupPlanData = item.lineupPlan?.data as LineupData | undefined;
 
               return (
@@ -129,7 +131,7 @@ export default async function AnmalanPage() {
                         Visa lagindelning
                         <span className="text-ink-subtle transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
                       </summary>
-                      <LineupView data={lineupPlanData} namesById={namesById} />
+                      <LineupView data={lineupPlanData} playersById={playersById} />
                     </details>
                   ) : null}
                   <div className="mt-3 border-t border-divider pt-3">
