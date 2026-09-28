@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { saveLineupPlan } from "@/app/admin/actions";
+import { RinkLineup } from "@/components/RinkLineup";
 import { DEFENSE_PAIRS, DEFENSE_SLOTS, FORWARD_LINES, FORWARD_SLOTS, GOALIE_SLOTS, LineupData, emptyLineup } from "@/lib/lineup";
 
 const selectClass = "h-11 w-full min-w-0 rounded-xl border border-divider bg-white px-2 text-sm outline-none focus:border-ink";
@@ -65,6 +66,7 @@ export function LineupEditor({
   const dataInputRef = useRef<HTMLInputElement>(null);
   const duplicateIds = duplicatePlayerIds(lineup);
   const hasDuplicates = duplicateIds.size > 0;
+  const playersById = useMemo(() => new Map(roster.map((p) => [p.id, { name: p.name, jerseyNo: p.jerseyNo }])), [roster]);
 
   useEffect(() => {
     if (dataInputRef.current) dataInputRef.current.value = JSON.stringify(lineup);
@@ -90,6 +92,14 @@ export function LineupEditor({
     <form action={formAction} className="space-y-5">
       <input type="hidden" name="activity" value={activityRef} />
       <input ref={dataInputRef} type="hidden" name="data" defaultValue={JSON.stringify(lineup)} />
+
+      <RinkLineup
+        forwardLines={lineup.forwardLines}
+        defensePairs={lineup.defensePairs}
+        goalies={lineup.goalies}
+        playersById={playersById}
+        duplicateIds={duplicateIds}
+      />
 
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink-subtle">Kedjor</p>
